@@ -1,0 +1,32 @@
+{
+    "name": "e2e",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "license": "MIT",
+    "type": "module",
+    "scripts": {
+        "lint": "npx eslint src test",
+        "lint:fix": "npm run lint -- --fix",
+        "prettier": "npx prettier src test --check",
+        "prettier:fix": "npm run prettier -- --write",
+        "format": "npm run prettier:fix && npm run lint:fix",
+        "validate": "yarn run check-types && yarn run check-format && yarn run lint"
+    },
+    "dependencies": {
+        "@faker-js/faker": "^7.6.0",
+        "@playwright/test": "^1.41.0",
+        "dotenv": "^16.3.1",
+        "eslint": "^8.57.0",
+        "eslint-plugin-playwright": "^1.5.4",
+        "playwright": "1.37.1",
+        "prettier": "3.2.5",
+        "typescript": "^5.4.3"
+    },
+    "devDependencies": {
+        "eslint-config-prettier": "^9.1.0",
+        "typescript-eslint": "^7.3.1"
+    },
+    "author": "Weronika Woronicz",
+    "private": false
+}
