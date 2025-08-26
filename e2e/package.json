@@ -6,12 +6,14 @@
     "license": "MIT",
     "type": "module",
     "scripts": {
-        "lint": "npx eslint src test",
-        "lint:fix": "npm run lint -- --fix",
-        "prettier": "npx prettier src test --check",
-        "prettier:fix": "npm run prettier -- --write",
-        "format": "npm run prettier:fix && npm run lint:fix",
-        "validate": "yarn run check-types && yarn run check-format && yarn run lint"
+    "lint": "pnpm exec eslint src test",
+    "lint:fix": "pnpm run lint -- --fix",
+    "prettier": "pnpm exec prettier src test --check",
+    "prettier:fix": "pnpm run prettier -- --write",
+    "format": "pnpm run prettier:fix && pnpm run lint:fix",
+    "check-types": "pnpm exec tsc --noEmit",
+    "check-format": "pnpm run prettier && pnpm run lint",
+    "validate": "pnpm run check-types && pnpm run check-format && pnpm run lint"
     },
     "dependencies": {
         "@faker-js/faker": "^7.6.0",
@@ -28,5 +30,5 @@
         "typescript-eslint": "^7.3.1"
     },
     "author": "Weronika Woronicz",
-    "private": false
+  "private": true
 }

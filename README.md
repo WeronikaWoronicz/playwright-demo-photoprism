@@ -4,6 +4,7 @@
 
 -   Playwright **latest**
 -   Node.js **16.latest**
+-   pnpm
 -   Docker
 
 ## Run local app :
@@ -20,8 +21,8 @@ Now your app is available on your localhost.
 ## Install dependencies :
 
 ```
-yarn install 
-yarn playwright install 
+pnpm install 
+pnpm playwright install 
 ```
 
 ## Code linting and formatting :
@@ -29,11 +30,11 @@ yarn playwright install
 To format and lint the code use:
 
 ```
-yarn format
+pnpm format
 ```
 
 To validate the code use:
 
 ```
-yarn validate
+pnpm validate
 ```
