@@ -25,6 +25,14 @@ pnpm install
 pnpm playwright install 
 ```
 
+## Test execution:
+
+To run all tests headed
+
+```
+pnpm exec playwright test --headed
+```
+
 ## Code linting and formatting :
 
 To format and lint the code use:
