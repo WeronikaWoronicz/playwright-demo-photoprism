@@ -12,6 +12,7 @@ export default defineConfig({
         navigationTimeout: 30000,
         trace: 'on-first-retry',
         screenshot: 'only-on-failure',
+        viewport: null,
     },
     timeout: 50 * 1000,
     expect: {
