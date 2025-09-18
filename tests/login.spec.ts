@@ -8,5 +8,10 @@ test('Login as a admin', async ({ page, loginPage }) => {
     await loginPage.fillPassword(photoprism.password)
     await loginPage.clickSignInBtn()
     await loginPage.assertLoginSuccess()
-});                  
+});  
+
+test('Login via API', async ({ page, loginPage }) => {
+    await page.goto(BASE_URL)
+    await loginPage.loginViaAPI(photoprism.username, photoprism.password);
+});
 });

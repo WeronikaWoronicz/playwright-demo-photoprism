@@ -28,6 +28,15 @@ export class LoginPage {
         await this.page.locator(input.password).fill(password);
     }
 
+    async loginViaAPI(username: string, password: string) {
+        const response = await this.page.request.post(
+            `${process.env.BASE_URL}/api/v1/session`, {
+            data: { username, password },
+        });
+        expect(response.ok()).toBeTruthy(
+        )
+    }
+
     // assertions
     async assertLoginSuccess() {
         await expect(this.page.getByTitle('admin')).toBeVisible();
