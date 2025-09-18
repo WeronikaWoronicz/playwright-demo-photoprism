@@ -12,6 +12,7 @@ test('Login as a admin', async ({ page, loginPage }) => {
 
 test('Login via API', async ({ page, loginPage }) => {
     await page.goto(BASE_URL)
+    await loginPage.clickSignInBtn()
     await loginPage.loginViaAPI(photoprism.username, photoprism.password);
 });
 });
