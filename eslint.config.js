@@ -1,22 +1,26 @@
-import tseslint from 'typescript-eslint';
-import eslint from '@eslint/js';
-import playwright from 'eslint-plugin-playwright'
+import typescriptPlugin from '@typescript-eslint/eslint-plugin';
+import typescriptParser from '@typescript-eslint/parser';
+import playwright from 'eslint-plugin-playwright';
 
-export default tseslint.config(
-    eslint.configs.recommended,
-    ...tseslint.configs.recommendedTypeChecked,
-    {
-        languageOptions: {
-          parserOptions: {
-            project: true,
-          },
-        },
+export default [
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    languageOptions: {
+      parser: typescriptParser,
+      parserOptions: {
+        project: true,
+      },
     },
-    playwright.configs['flat/recommended'],
-    {
-        rules: {
-            semi: ["warn", "always"],
-            "@typescript-eslint/no-floating- ": "error",    
-        }, 
-    }
-  );
+    plugins: {
+      '@typescript-eslint': typescriptPlugin,
+      playwright,
+    },
+    rules: {
+      semi: ['warn', 'always'],
+      '@typescript-eslint/no-floating-promises': 'error',
+    },
+  },
+  {
+    ignores: ['**/node_modules/**'],
+  },
+];

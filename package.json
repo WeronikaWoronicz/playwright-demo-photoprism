@@ -6,8 +6,8 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "lint": "pnpm exec eslint src test",
-    "lint:fix": "pnpm run lint -- --fix",
+    "lint": "eslint tests",
+    "lint:fix": "run lint -- --fix",
     "prettier": "pnpm exec prettier src test --check",
     "prettier:fix": "pnpm run prettier -- --write",
     "format": "pnpm run prettier:fix && pnpm run lint:fix",
