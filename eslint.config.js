@@ -17,6 +17,7 @@ export default [
     },
     rules: {
       semi: ['warn', 'always'],
+      ...playwright.configs['flat/recommended'].rules,
       '@typescript-eslint/no-floating-promises': 'error',
     },
   },
