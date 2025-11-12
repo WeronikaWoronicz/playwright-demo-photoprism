@@ -1,47 +1,42 @@
-import { expect, type Page } from '@playwright/test';
+import { BrowserContext, expect, type Page } from '@playwright/test';
 import { LoginPageSelectors } from './LoginPageSelectors.js';
-const { input, buttons } = LoginPageSelectors
+const { input, buttons } = LoginPageSelectors;
 
 export class LoginPage {
-    private page: Page;
+  private page: Page;
 
-    constructor(page: Page) {
-        this.page = page; 
-    }
+  constructor(page: Page) {
+    this.page = page;
+  }
 
-    // steps
-    async clickSignInBtn() {
-        await this.page.getByText(buttons.signIn).click();
-    }
+  // steps
+  async clickSignInBtn() {
+    await this.page.getByText(buttons.signIn).click();
+  }
 
-    async clickAdminTitle() {
-        const adminAvatar = this.page.getByTitle('admin');
-        await adminAvatar.scrollIntoViewIfNeeded();
-        await adminAvatar.click();
-    }
+  async clickPhotoprismLogoMenu() {
+    await this.page.locator('a', { has: this.page.getByAltText('PhotoPrism') }).click();
+  }
 
-    async fillUserName(user: string) {
-        await this.page.locator(input.userName).fill(user);
-    }
+  async clickAdminTitle() {
+    const adminAvatar = this.page.getByTitle('admin');
+    await adminAvatar.scrollIntoViewIfNeeded();
+    await adminAvatar.click();
+  }
 
-    async fillPassword(password: string) {
-        await this.page.locator(input.password).fill(password);
-    }
+  async fillUserName(user: string) {
+    await this.page.locator(input.userName).fill(user);
+  }
 
-    async loginViaAPI(username: string, password: string) {
-        const response = await this.page.request.post(
-            `${process.env.BASE_URL}/api/v1/session`, {
-            data: { username, password },
-        });
-        expect(response.ok()).toBeTruthy(
-        )
-    }
+  async fillPassword(password: string) {
+    await this.page.locator(input.password).fill(password);
+  }
 
-    // assertions
-    async assertLoginSuccess() {
-        await expect(this.page.getByTitle('admin')).toBeVisible();
-        this.clickAdminTitle();
-        await this.page.getByTitle('admin').click();
-        await expect(this.page.getByRole('textbox', { name: 'Display Name Display Name' })).toHaveValue('Admin');
-    }
+  // assertions
+  async assertLoginSuccess() {
+    await expect(this.page.getByTitle('admin')).toBeVisible();
+    this.clickAdminTitle();
+    await this.page.getByTitle('admin').click();
+    await expect(this.page.getByRole('textbox', { name: 'Display Name Display Name' })).toHaveValue('Admin');
+  }
 }

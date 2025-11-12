@@ -1,9 +1,9 @@
 export const LoginPageSelectors = {
-    input: {
-        userName: '#auth-username',
-        password: '#auth-password'
-    },
-    buttons: {
-        signIn: 'Sign in'
-    }
-}
+  input: {
+    userName: '#auth-username',
+    password: '#auth-password',
+  },
+  buttons: {
+    signIn: 'Sign in',
+  },
+};

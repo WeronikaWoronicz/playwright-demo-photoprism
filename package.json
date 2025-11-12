@@ -8,8 +8,7 @@
   "scripts": {
     "lint": "eslint tests",
     "lint:fix": "run lint -- --fix",
-    "prettier": "pnpm exec prettier src test --check",
-    "prettier:fix": "pnpm run prettier -- --write",
+    "prettier": "pnpm exec prettier --check",
     "format": "pnpm run prettier:fix && pnpm run lint:fix",
     "check-types": "pnpm exec tsc --noEmit",
     "check-format": "pnpm run prettier && pnpm run lint",
