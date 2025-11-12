@@ -2,10 +2,10 @@
 
 ## Technology Stack
 
--   Playwright **latest**
--   Node.js **16.latest**
--   pnpm
--   Docker
+- Playwright **latest**
+- Node.js **16.latest**
+- pnpm
+- Docker
 
 ## Run local app :
 
@@ -16,13 +16,13 @@ cd .\photoprism
 docker compose up -d
 ```
 
-Now your app is available on your localhost. 
+Now your app is available on your localhost.
 
 ## Install dependencies :
 
 ```
-pnpm install 
-pnpm playwright install 
+pnpm install
+pnpm playwright install
 ```
 
 ## Test execution:
