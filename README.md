@@ -25,6 +25,12 @@ pnpm install
 pnpm playwright install
 ```
 
+## Generating test assets
+
+```
+npx ts-node .\scripts\generate-test-assets-picsum.ts
+```
+
 ## Test execution:
 
 To run all tests headed
