@@ -3,6 +3,7 @@ import { BASE_URL, photoprism } from '../config.js';
 import { loginViaAPI } from '../lib/auth.js';
 
 test.describe('Login to photoprism', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
   test('Login as an admin', async ({ page, loginPage }) => {
     await page.goto(BASE_URL);
     await loginPage.fillUserName(photoprism.username);

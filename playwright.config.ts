@@ -20,4 +20,17 @@ export default defineConfig({
   },
   retries: 2,
   workers: 4,
+  projects: [
+    {
+      name: 'admin',
+      testMatch: /admin\.setup\.ts/,
+    },
+    {
+      name: 'chromium',
+      dependencies: ['admin'],
+      use: {
+        storageState: 'playwright/.auth/adminState.json',
+      },
+    },
+  ],
 });
