@@ -52,3 +52,36 @@ To validate the code use:
 ```
 pnpm validate
 ```
+
+## Claude Code Integration
+
+This project includes Claude Code configuration for AI-assisted Playwright test development.
+
+### Available Skills
+
+The `.claude/SKILL.md` file provides Claude with Playwright testing best practices including:
+
+- Page Object Model patterns
+- Locator strategies (priority order)
+- Authentication handling with storage state
+- File upload/download handling
+- Network mocking
+- CI/CD integration
+- Flaky test debugging
+
+### Custom Agents (VS Code Chat Modes)
+
+Located in `.vscode/chatmodes/`:
+
+| Agent | Description |
+|-------|-------------|
+| **Generator** | Creates new Playwright tests following project conventions |
+| **Healer** | Fixes broken selectors and flaky tests |
+| **Planner** | Designs test strategies and creates test plans |
+
+### Usage
+
+Ask Claude about Playwright topics and it will use the skill automatically:
+- "Write a test for user login"
+- "Fix this flaky test"
+- "How should I handle file uploads?"
