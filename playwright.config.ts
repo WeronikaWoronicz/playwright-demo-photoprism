@@ -6,13 +6,17 @@ dotenv.config({
 });
 
 export default defineConfig({
-  testDir: '.',
-  reporter: [['html', { open: 'never' }], ['list']],
+  testDir: './tests',
+  outputDir: './test-results',
+  reporter: [
+    ['html', { open: 'never', outputFolder: 'playwright-report' }],
+    ['list'],
+  ],
   use: {
     baseURL: process.env['BASE_URL'],
     actionTimeout: 0,
     navigationTimeout: 30000,
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     viewport: { width: 1920, height: 1080 },
   },
@@ -21,16 +25,17 @@ export default defineConfig({
     timeout: 10000,
   },
   retries: 2,
-  workers: 4,
+  workers: process.env['CI'] ? 1 : 4,
   projects: [
     {
-      name: 'admin',
-      testMatch: /admin\.setup\.ts/,
+      name: 'setup',
+      testMatch: /.*\.setup\.ts/,
     },
     {
       name: 'chromium',
-      dependencies: ['admin'],
+      dependencies: ['setup'],
       use: {
+        browserName: 'chromium',
         storageState: 'playwright/.auth/adminState.json',
       },
     },

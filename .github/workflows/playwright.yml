@@ -79,6 +79,7 @@ jobs:
           name: playwright-traces
           path: test-results/
           retention-days: 30
+          if-no-files-found: ignore
 
       - name: Add PR comment with report link
         if: github.event_name == 'pull_request' && !cancelled()
