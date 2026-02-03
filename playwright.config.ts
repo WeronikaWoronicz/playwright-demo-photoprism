@@ -7,7 +7,9 @@ dotenv.config({
 
 export default defineConfig({
   testDir: '.',
+  reporter: [['html', { open: 'never' }], ['list']],
   use: {
+    baseURL: process.env['BASE_URL'],
     actionTimeout: 0,
     navigationTimeout: 30000,
     trace: 'on-first-retry',
