@@ -21,6 +21,8 @@ jobs:
         image: photoprism/photoprism:latest
         env:
           PHOTOPRISM_DATABASE_DRIVER: sqlite
+          PHOTOPRISM_ADMIN_USER: ${{ secrets.PHOTOPRISM_USERNAME }}
+          PHOTOPRISM_ADMIN_PASSWORD: ${{ secrets.PHOTOPRISM_PASSWORD }}
         ports:
           - 2342:2342
         options: >-
@@ -101,6 +103,8 @@ jobs:
         image: photoprism/photoprism:latest
         env:
           PHOTOPRISM_DATABASE_DRIVER: sqlite
+          PHOTOPRISM_ADMIN_USER: ${{ secrets.PHOTOPRISM_USERNAME }}
+          PHOTOPRISM_ADMIN_PASSWORD: ${{ secrets.PHOTOPRISM_PASSWORD }}
         ports:
           - 2342:2342
         options: >-

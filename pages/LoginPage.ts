@@ -1,4 +1,4 @@
-import { BrowserContext, expect, type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { LoginPageSelectors } from './LoginPageSelectors.js';
 const { input, buttons } = LoginPageSelectors;
 
