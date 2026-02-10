@@ -1,6 +1,20 @@
-import { expect, type Page } from '@playwright/test';
-import { LoginPageSelectors } from './LoginPageSelectors.js';
-const { input, buttons } = LoginPageSelectors;
+import { type Page } from '@playwright/test';
+
+const selectors = {
+  input: {
+    userName: '#auth-username',
+    password: '#auth-password',
+  },
+  buttons: {
+    signIn: 'Sign in',
+  },
+  logo: {
+    photoprism: 'PhotoPrism',
+  },
+  user: {
+    adminTitle: 'admin',
+  },
+};
 
 export class LoginPage {
   private page: Page;
@@ -9,34 +23,25 @@ export class LoginPage {
     this.page = page;
   }
 
-  // steps
   async clickSignInBtn() {
-    await this.page.getByText(buttons.signIn).click();
+    await this.page.getByText(selectors.buttons.signIn).click();
   }
 
   async clickPhotoprismLogoMenu() {
-    await this.page.locator('a', { has: this.page.getByAltText('PhotoPrism') }).click();
+    await this.page.locator('a', { has: this.page.getByAltText(selectors.logo.photoprism) }).click();
   }
 
   async clickAdminTitle() {
-    const adminAvatar = this.page.getByTitle('admin');
+    const adminAvatar = this.page.getByTitle(selectors.user.adminTitle);
     await adminAvatar.scrollIntoViewIfNeeded();
     await adminAvatar.click();
   }
 
   async fillUserName(user: string) {
-    await this.page.locator(input.userName).fill(user);
+    await this.page.locator(selectors.input.userName).fill(user);
   }
 
   async fillPassword(password: string) {
-    await this.page.locator(input.password).fill(password);
-  }
-
-  // assertions
-  async assertLoginSuccess() {
-    await expect(this.page.getByTitle('admin')).toBeVisible();
-    this.clickAdminTitle();
-    await this.page.getByTitle('admin').click();
-    await expect(this.page.getByRole('textbox', { name: 'Display Name Display Name' })).toHaveValue('Admin');
+    await this.page.locator(selectors.input.password).fill(password);
   }
 }

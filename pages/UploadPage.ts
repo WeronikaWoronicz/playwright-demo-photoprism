@@ -1,8 +1,30 @@
 import { Page, expect } from '@playwright/test';
 import { BASE_URL } from '../config.js';
 
+const selectors = {
+  nav: {
+    uploadButton: 'Upload photos',
+    searchInput: 'Search',
+  },
+  upload: {
+    browseButton: /browse/i,
+    completeText: 'Upload complete',
+  },
+  photo: {
+    tile: '.is-photo',
+    renderedTile: '.is-photo[data-uid]',
+    selectButton: '.is-photo button.input-select',
+  },
+  clipboard: {
+    fab: '.clipboard-container .action-menu',
+    container: '#t-clipboard',
+    approveButton: 'Approve',
+    approvedText: 'Selection approved',
+  },
+};
+
 export class UploadPage {
-  constructor(private page: Page) {}
+  constructor(readonly page: Page) {}
 
   async navigateToUploadForm() {
     await this.page.goto(BASE_URL);
@@ -10,76 +32,53 @@ export class UploadPage {
   }
 
   private async openUploadMenu() {
-    await this.page.waitForLoadState('networkidle');
-    const menuButton = await this.findMenuButton();
-    await menuButton.click();
-    await this.page.getByText('Upload').click();
-  }
-
-  // Note: Adding aria-label to the menu button would improve accessibility and test reliability,
-  // but this requires changes in the PhotoPrism application itself.
-  private async findMenuButton() {
-    // Try aria-label first (accessible)
-    const ariaLabelMenu = this.page.locator('button[aria-label*="menu" i], button[aria-label*="more" i]').first();
-    if ((await ariaLabelMenu.count()) > 0 && (await ariaLabelMenu.isVisible())) {
-      return ariaLabelMenu;
-    }
-
-    // Try title attribute
-    const titleMenu = this.page.locator('button[title*="menu" i], button[title*="more" i]').first();
-    if ((await titleMenu.count()) > 0 && (await titleMenu.isVisible())) {
-      return titleMenu;
-    }
-
-    // Fallback to positional selector - brittle but works until PhotoPrism adds proper aria-labels
-    return this.page.getByRole('button').nth(5);
+    const uploadBtn = this.page.getByRole('button', { name: selectors.nav.uploadButton });
+    await uploadBtn.waitFor();
+    await uploadBtn.click();
   }
 
   async uploadFiles(filePaths: string | string[]) {
     const fileChooserPromise = this.page.waitForEvent('filechooser');
-    await this.page.getByRole('button', { name: /browse/i }).click();
+    await this.page.getByRole('button', { name: selectors.upload.browseButton }).click();
     const fileChooser = await fileChooserPromise;
 
-    if (typeof filePaths === 'string') {
-      await fileChooser.setFiles(filePaths);
-    } else {
-      await fileChooser.setFiles(filePaths);
-    }
+    await fileChooser.setFiles(filePaths);
   }
 
   async waitForUploadComplete() {
-    await expect(this.page.getByText('Upload has been processed')).toBeVisible({
-      timeout: 30000,
-    });
+    await this.page.getByText(selectors.upload.completeText).waitFor({ timeout: 30000 });
   }
 
   async navigateToReviewSection() {
     await this.page.goto(`${BASE_URL}/library/review`);
-    await this.page.waitForLoadState('networkidle');
+    await this.page.locator(selectors.photo.tile).first().waitFor({ timeout: 30000 });
   }
 
   async approveAllPhotos() {
-    const photoThumbnails = this.page.locator('button:has(img), a:has(img), div[role="button"]:has(img)');
-    const photoCount = await photoThumbnails.count();
+    await expect(this.page.locator(selectors.photo.tile).first()).toBeVisible({ timeout: 30000 });
 
-    if (photoCount === 0) {
-      console.warn('No photos found in Review section');
-      return;
-    }
+    // Standard .click() is unreliable on Vue components; dispatchEvent triggers the correct event chain
+    await this.page.evaluate((selector) => {
+      document.querySelectorAll(selector).forEach((btn) => {
+        btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        btn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+        btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      });
+    }, selectors.photo.selectButton);
 
-    await photoThumbnails.first().click();
-    await this.page.keyboard.press('Control+A');
+    const clipboardFab = this.page.locator(selectors.clipboard.fab);
+    await expect(clipboardFab).toBeVisible({ timeout: 10000 });
+    await clipboardFab.click();
 
-    const approveButton = this.page.getByRole('button', { name: /approve/i }).first();
-    if ((await approveButton.count()) > 0) {
-      await approveButton.click();
-    } else {
-      console.warn('Approve button not found');
-    }
+    const approveBtn = this.page.locator(selectors.clipboard.container).getByRole('button', { name: selectors.clipboard.approveButton });
+    await expect(approveBtn).toBeVisible({ timeout: 5000 });
+    await approveBtn.click();
+
+    await expect(this.page.getByText(selectors.clipboard.approvedText)).toBeVisible({ timeout: 10000 });
   }
 
   async navigateToLibrary() {
     await this.page.goto(`${BASE_URL}/library/browse`);
-    await this.page.waitForLoadState('networkidle');
+    await this.page.getByRole('textbox', { name: selectors.nav.searchInput }).waitFor();
   }
 }
