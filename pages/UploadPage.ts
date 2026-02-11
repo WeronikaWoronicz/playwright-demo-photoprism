@@ -1,5 +1,6 @@
 import { Page, expect } from '@playwright/test';
 import { BASE_URL } from '../config.js';
+import { uploadMessages } from '../lib/constants.js';
 
 const selectors = {
   nav: {
@@ -8,7 +9,7 @@ const selectors = {
   },
   upload: {
     browseButton: /browse/i,
-    completeText: 'Upload complete',
+    completeText: uploadMessages.uploadCompleted,
   },
   photo: {
     tile: '.is-photo',

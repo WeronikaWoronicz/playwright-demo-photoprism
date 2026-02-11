@@ -1,4 +1,4 @@
-import { BrowserContext } from '@playwright/test';
+import { BrowserContext, Page } from '@playwright/test';
 import { BASE_URL } from '../config.js';
 
 export async function deleteAllPhotos(context: BrowserContext) {
@@ -12,7 +12,18 @@ export async function deleteAllPhotos(context: BrowserContext) {
       throw new Error('No session token found in localStorage');
     }
 
-    const photoUIDs = await getAllPhotoUIDs(page, sessionToken);
+    const reviewUIDs = await getAllPhotoUIDs(page, sessionToken, true);
+    if (reviewUIDs.length > 0) {
+      const approveResponse = await page.request.post(`${BASE_URL}/api/v1/batch/photos/approve`, {
+        data: { photos: reviewUIDs },
+        headers: { 'X-Auth-Token': sessionToken },
+      });
+      if (!approveResponse.ok()) {
+        throw new Error(`Failed to approve review photos before delete: ${approveResponse.status()}`);
+      }
+    }
+
+    const photoUIDs = await getAllPhotoUIDs(page, sessionToken, false);
     if (photoUIDs.length === 0) {
       return;
     }
@@ -34,11 +45,12 @@ export async function deleteAllPhotos(context: BrowserContext) {
   }
 }
 
-async function getAllPhotoUIDs(page: any, sessionToken: string): Promise<string[]> {
+async function getAllPhotoUIDs(page: Page, sessionToken: string, review = false): Promise<string[]> {
   const response = await page.request.get(`${BASE_URL}/api/v1/photos`, {
     params: {
       count: 10000,
       offset: 0,
+      ...(review ? { review: true } : {}),
     },
     headers: {
       'X-Auth-Token': sessionToken,
@@ -49,6 +61,6 @@ async function getAllPhotoUIDs(page: any, sessionToken: string): Promise<string[
     throw new Error(`Failed to get photos: ${response.status()}`);
   }
 
-  const data = await response.json();
-  return data.map((photo: any) => photo.UID);
+  const data = (await response.json()) as Array<{ UID: string }>;
+  return data.map((photo) => photo.UID);
 }
