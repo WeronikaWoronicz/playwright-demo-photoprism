@@ -13,7 +13,7 @@
     "check-types": "pnpm exec tsc --noEmit",
     "check-format": "pnpm run prettier && pnpm run lint",
     "validate": "pnpm run check-types && pnpm run check-format && pnpm run lint",
-    "generate:test-assets": "npx ts-node ./scripts/generate-test-assets-picsum.ts"
+    "generate:test-assets": "pnpm exec ts-node ./scripts/generate-test-assets-picsum.ts"
   },
   "dependencies": {
     "@faker-js/faker": "^8.4.1",

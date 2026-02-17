@@ -2,16 +2,13 @@ import { defineConfig } from '@playwright/test';
 import dotenv from 'dotenv';
 
 dotenv.config({
-  path: `env/${process.env.NODE_ENV ? `${process.env.NODE_ENV}.env` : `local.env`}`,
+  path: `env/${process.env['NODE_ENV'] ? `${process.env['NODE_ENV']}.env` : `local.env`}`,
 });
 
 export default defineConfig({
   testDir: './tests',
   outputDir: './test-results',
-  reporter: [
-    ['html', { open: 'never', outputFolder: 'playwright-report' }],
-    ['list'],
-  ],
+  reporter: [['html', { open: 'never', outputFolder: 'playwright-report' }], ['list']],
   use: {
     baseURL: process.env['BASE_URL'],
     actionTimeout: 0,
