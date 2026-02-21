@@ -28,7 +28,7 @@ export class LoginPage {
   }
 
   async clickPhotoprismLogoMenu() {
-    await this.page.locator('a', { has: this.page.getByAltText(selectors.logo.photoprism) }).click();
+    await this.page.getByRole('link', { name: selectors.logo.photoprism }).click();
   }
 
   async clickAdminTitle() {
