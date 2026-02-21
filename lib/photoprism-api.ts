@@ -64,3 +64,26 @@ async function getAllPhotoUIDs(page: Page, sessionToken: string, review = false)
   const data = (await response.json()) as Array<{ UID: string }>;
   return data.map((photo) => photo.UID);
 }
+
+export async function getPhotos(
+  page: Page,
+  count: number,
+): Promise<Array<{ UID: string; OriginalName: string }>> {
+  const state = await page.context().storageState();
+  const token = state.origins
+    .flatMap((o) => o.localStorage ?? [])
+    .find((item) => item.name === 'session.token')?.value;
+
+  if (!token) {
+    throw new Error('No session token found in storage state');
+  }
+
+  const response = await page.request.get(`${BASE_URL}/api/v1/photos`, {
+    params: { count, offset: 0 },
+    headers: { 'X-Auth-Token': token },
+  });
+  if (!response.ok()) {
+    throw new Error(`Failed to get photos: ${response.status()}`);
+  }
+  return response.json() as Promise<Array<{ UID: string; OriginalName: string }>>;
+}

@@ -82,4 +82,11 @@ export class UploadPage {
     await this.page.goto(`${BASE_URL}/library/browse`);
     await this.page.getByRole('textbox', { name: selectors.nav.searchInput }).waitFor();
   }
+
+  async getRenderedPhotoUids(): Promise<string[]> {
+    const tiles = this.page.locator(selectors.photo.renderedTile);
+    return tiles.evaluateAll((els: Element[]) =>
+      els.map((el) => el.getAttribute('data-uid') as string),
+    );
+  }
 }
