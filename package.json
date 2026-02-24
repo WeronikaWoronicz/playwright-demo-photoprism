@@ -7,28 +7,30 @@
   "type": "module",
   "scripts": {
     "lint": "eslint tests",
-    "lint:fix": "run lint --fix",
+    "lint:fix": "eslint tests --fix",
     "prettier": "pnpm exec prettier --check",
     "format": "pnpm run prettier:fix && pnpm run lint:fix",
     "check-types": "pnpm exec tsc --noEmit",
     "check-format": "pnpm run prettier && pnpm run lint",
-    "validate": "pnpm run check-types && pnpm run check-format && pnpm run lint"
+    "validate": "pnpm run check-types && pnpm run check-format && pnpm run lint",
+    "generate:test-assets": "pnpm exec ts-node ./scripts/generate-test-assets-picsum.ts"
   },
   "dependencies": {
     "@faker-js/faker": "^8.4.1",
     "dotenv": "^16.6.1",
     "eslint": "^9.33.0",
     "eslint-plugin-playwright": "^1.8.3",
-    "playwright": "^1.54.2",
+    "playwright": "1.56.1",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2"
   },
   "devDependencies": {
-    "@playwright/test": "^1.56.1",
+    "@playwright/test": "1.56.1",
     "@types/node": "^24.9.2",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
-    "eslint-config-prettier": "^9.1.2"
+    "eslint-config-prettier": "^9.1.2",
+    "ts-node": "^10.9.1"
   },
   "author": "Weronika Woronicz",
   "private": true

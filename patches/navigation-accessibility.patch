@@ -1,0 +1,223 @@
+diff --git a/frontend/src/component/navigation.vue b/frontend/src/component/navigation.vue
+index cba5616..178a81d 100644
+--- a/frontend/src/component/navigation.vue
++++ b/frontend/src/component/navigation.vue
+@@ -14,6 +14,7 @@
+             variant="text"
+             class="nav-mobile-menu-trigger elevation-0"
+             :ripple="false"
++            :aria-label="$gettext('Open menu')"
+             @click.stop.prevent="speedDial = true"
+           ></v-btn>
+         </v-toolbar>
+@@ -31,6 +32,7 @@
+             variant="text"
+             class="nav-mobile-menu-trigger elevation-0"
+             :ripple="false"
++            :aria-label="$gettext('Open menu')"
+             @click.stop.prevent="speedDial = true"
+           ></v-btn>
+         </v-toolbar>
+@@ -77,11 +79,55 @@
+             :density="$vuetify.display.smAndDown ? 'compact' : 'comfortable'"
+             tabindex="-1"
+           >
+-            <v-list-item v-if="isMini && !isRestricted" class="nav-expand" @click.stop="toggleIsMini()">
++            <v-list-item
++              v-if="isMini && !isRestricted"
++              class="nav-expand"
++              @click.stop="toggleIsMini()"
++              role="button"
++              :aria-label="isMini ? $gettext('Expand sidebar') : $gettext('Collapse sidebar')"
++            >
+               <v-icon :icon="rtl ? 'mdi-chevron-left' : 'mdi-chevron-right'" class="ma-auto"></v-icon>
+             </v-list-item>
+ 
+-            <v-list-item v-if="isMini && $config.feature('search')" to="/browse" variant="text" class="nav-browse" :ripple="false" @click.stop="">
++            <v-list-item
++              v-if="isMini && auth && !config.readonly && $config.feature('upload')"
++              variant="text"
++              class="nav-upload"
++              role="button"
++              :aria-label="$gettext('Upload photos')"
++              :ripple="false"
++              @click.stop="openUpload()"
++            >
++              <v-icon class="ma-auto">mdi-cloud-upload</v-icon>
++            </v-list-item>
++
++            <v-list-item
++              v-else-if="!isMini && auth && !config.readonly && $config.feature('upload')"
++              variant="text"
++              class="nav-upload"
++              role="button"
++              :aria-label="$gettext('Upload')"
++              :ripple="false"
++              @click.stop="openUpload()"
++            >
++              <v-list-item-title class="nav-menu-item">
++                <v-icon>mdi-cloud-upload</v-icon>
++                <p class="nav-item-title">
++                  {{ $gettext(`Upload`) }}
++                </p>
++              </v-list-item-title>
++            </v-list-item>
++
++            <v-list-item
++              v-if="isMini && $config.feature('search')"
++              to="/browse"
++              variant="text"
++              class="nav-browse"
++              :ripple="false"
++              @click.stop=""
++              role="button"
++              :aria-label="$gettext('Search')"
++            >
+               <v-icon class="ma-auto">mdi-magnify</v-icon>
+             </v-list-item>
+             <div v-else-if="!isMini && $config.feature('search')">
+@@ -181,7 +227,31 @@
+               </v-list-group>
+             </div>
+ 
+-            <v-list-item v-if="isMini" v-show="$config.feature('albums')" to="/albums" variant="text" class="nav-albums" :ripple="false" @click.stop="">
++            <v-list-item
++              v-if="isMini"
++              v-show="$config.feature('archive')"
++              to="/archive"
++              variant="text"
++              class="nav-archive"
++              :ripple="false"
++              role="button"
++              :aria-label="$gettext('Archive')"
++              @click.stop=""
++            >
++              <v-icon class="ma-auto">mdi-archive</v-icon>
++            </v-list-item>
++
++            <v-list-item
++              v-if="isMini"
++              v-show="$config.feature('albums')"
++              to="/albums"
++              variant="text"
++              class="nav-albums"
++              :ripple="false"
++              @click.stop=""
++              role="button"
++              :aria-label="$gettext('Albums')"
++            >
+               <v-icon class="ma-auto">mdi-bookmark</v-icon>
+             </v-list-item>
+             <div v-else-if="!isMini" v-show="$config.feature('albums')">
+@@ -209,7 +279,16 @@
+               </v-list-group>
+             </div>
+ 
+-            <v-list-item v-if="isMini && $config.feature('videos')" to="/media" variant="text" class="nav-media" :ripple="false" @click.stop="">
++            <v-list-item
++              v-if="isMini && $config.feature('videos')"
++              to="/media"
++              variant="text"
++              class="nav-media"
++              :ripple="false"
++              @click.stop=""
++              role="button"
++              :aria-label="$gettext('Media')"
++            >
+               <v-icon class="ma-auto">mdi-play-circle</v-icon>
+             </v-list-item>
+             <div v-else-if="!isMini && $config.feature('videos')">
+@@ -265,6 +344,8 @@
+               variant="text"
+               class="nav-people"
+               :ripple="false"
++              role="button"
++              :aria-label="$gettext('People')"
+               @click.stop=""
+             >
+               <v-icon class="ma-auto">mdi-account</v-icon>
+@@ -335,6 +416,8 @@
+                 variant="text"
+                 class="nav-places"
+                 :ripple="false"
++                role="button"
++                :aria-label="$gettext('Places')"
+                 @click.stop=""
+               >
+                 <v-icon class="ma-auto">mdi-map-marker</v-icon>
+@@ -399,6 +482,8 @@
+               variant="text"
+               class="nav-moments"
+               :ripple="false"
++              role="button"
++              :aria-label="$gettext('Moments')"
+               @click.stop=""
+             >
+               <v-icon class="ma-auto">mdi-filmstrip-box</v-icon>
+@@ -420,7 +505,16 @@
+               <span v-show="config.count.moments > 0" class="nav-count-item">{{ config.count.moments }}</span>
+             </v-list-item>
+ 
+-            <v-list-item v-if="isMini && $config.feature('labels')" to="/labels" variant="text" class="nav-labels" :ripple="false" @click.stop="">
++            <v-list-item
++              v-if="isMini && $config.feature('labels')"
++              to="/labels"
++              variant="text"
++              class="nav-labels"
++              :ripple="false"
++              @click.stop=""
++              role="button"
++              :aria-label="$gettext('Labels')"
++            >
+               <v-icon class="ma-auto">mdi-label</v-icon>
+             </v-list-item>
+             <v-list-item v-else-if="!isMini && $config.feature('labels')" to="/labels" variant="text" class="nav-labels" :ripple="false" @click.stop="">
+@@ -466,6 +560,8 @@
+               variant="text"
+               class="nav-library"
+               :ripple="false"
++              role="button"
++              :aria-label="$gettext('Library')"
+               @click.stop=""
+             >
+               <v-icon class="ma-auto">mdi-film</v-icon>
+@@ -516,6 +612,8 @@
+                 variant="text"
+                 class="nav-settings"
+                 :ripple="false"
++                role="button"
++                :aria-label="$gettext('Settings')"
+                 @click.stop=""
+               >
+                 <v-icon class="ma-auto">mdi-cog</v-icon>
+diff --git a/frontend/src/component/photo/view/mosaic.vue b/frontend/src/component/photo/view/mosaic.vue
+index c4ea326..db0aa3c 100644
+--- a/frontend/src/component/photo/view/mosaic.vue
++++ b/frontend/src/component/photo/view/mosaic.vue
+@@ -32,7 +32,7 @@
+             :data-uid="m.UID"
+             class="media result preview placeholder"
+           />
+-          <div
++          <button
+             v-else
+             :data-id="m.ID"
+             :data-uid="m.UID"
+@@ -40,6 +40,8 @@
+             :style="`background-image: url(${m.thumbnailUrl('tile_224')})`"
+             :class="m.classes()"
+             class="media result preview"
++            role="button"
++            :aria-label="m.Title || m.getOriginalName()"
+             @contextmenu.stop="onContextMenu($event, index)"
+             @touchstart.passive="input.touchStart($event, index)"
+             @touchend.stop="onClick($event, index)"
+@@ -112,7 +114,7 @@
+               <i v-if="m.Favorite" class="mdi mdi-star text-favorite favorite-on" />
+               <i v-else class="mdi mdi-star-outline favorite-off" />
+             </button>
+-          </div>
++          </button>
+         </div>
+       </div>
+     </div>

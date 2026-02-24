@@ -128,5 +128,8 @@ dist
 /blob-report/
 /playwright/.cache/
 
-# Playwright
+# Playwright auth state (keep directory, ignore state files)
 /playwright/.auth/
+
+# Environment files with credentials
+env/local.env
