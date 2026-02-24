@@ -1,7 +1,7 @@
 # Custom PhotoPrism Docker image with accessibility improvements
 # This image includes aria-labels and roles for better accessibility support in tests
 
-FROM photoprism/photoprism:251130-b3068414c as base
+FROM photoprism/photoprism:251130 AS base
 
 # Stage 1: Extract and build custom frontend
 FROM node:18-alpine AS frontend-builder
@@ -25,7 +25,7 @@ RUN npm ci --legacy-peer-deps && \
     npm run build
 
 # Stage 2: Apply built frontend to official PhotoPrism image
-FROM photoprism/photoprism:251130-b3068414c
+FROM photoprism/photoprism:251130
 
 # Copy custom-built frontend
 COPY --from=frontend-builder /src/frontend/dist /opt/photoprism/assets/static
