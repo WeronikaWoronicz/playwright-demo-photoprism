@@ -16,22 +16,25 @@ jobs:
     name: 🔬 E2E Tests
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    services:
-      photoprism:
-        image: photoprism/photoprism:latest
-        env:
-          PHOTOPRISM_DATABASE_DRIVER: sqlite
-          PHOTOPRISM_ADMIN_USER: ${{ secrets.PHOTOPRISM_USERNAME }}
-          PHOTOPRISM_ADMIN_PASSWORD: ${{ secrets.PHOTOPRISM_PASSWORD }}
-        ports:
-          - 2342:2342
-        options: >-
-          --health-cmd "curl -f http://localhost:2342/api/v1/status || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - uses: actions/checkout@v4
+      - name: Build patched PhotoPrism image
+        run: docker build -f sut/photoprism.Dockerfile -t photoprism-patched .
+      - name: Start PhotoPrism
+        run: docker run -d --name photoprism -p 2342:2342 -e PHOTOPRISM_DATABASE_DRIVER=sqlite -e PHOTOPRISM_ADMIN_USER=${{ secrets.PHOTOPRISM_USERNAME }} -e PHOTOPRISM_ADMIN_PASSWORD=${{ secrets.PHOTOPRISM_PASSWORD }} photoprism-patched
+      - name: Wait for PhotoPrism to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -f http://localhost:2342/api/v1/status > /dev/null 2>&1; then
+              echo 'PhotoPrism is ready'
+              exit 0
+            fi
+            echo "Attempt $i/30: PhotoPrism not ready yet, waiting..."
+            sleep 10
+          done
+          echo 'PhotoPrism failed to start'
+          exit 1
+
       - uses: pnpm/action-setup@v4
         with:
           version: 9
@@ -98,25 +101,28 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'visual-update')
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    services:
-      photoprism:
-        image: photoprism/photoprism:latest
-        env:
-          PHOTOPRISM_DATABASE_DRIVER: sqlite
-          PHOTOPRISM_ADMIN_USER: ${{ secrets.PHOTOPRISM_USERNAME }}
-          PHOTOPRISM_ADMIN_PASSWORD: ${{ secrets.PHOTOPRISM_PASSWORD }}
-        ports:
-          - 2342:2342
-        options: >-
-          --health-cmd "curl -f http://localhost:2342/api/v1/status || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.event.pull_request.head.ref }}
+      - name: Build patched PhotoPrism image
+        run: docker build -f sut/photoprism.Dockerfile -t photoprism-patched .
+      - name: Start PhotoPrism
+        run: docker run -d --name photoprism -p 2342:2342 -e PHOTOPRISM_DATABASE_DRIVER=sqlite -e PHOTOPRISM_ADMIN_USER=${{ secrets.PHOTOPRISM_USERNAME }} -e PHOTOPRISM_ADMIN_PASSWORD=${{ secrets.PHOTOPRISM_PASSWORD }} photoprism-patched
+      - name: Wait for PhotoPrism to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -f http://localhost:2342/api/v1/status > /dev/null 2>&1; then
+              echo 'PhotoPrism is ready'
+              exit 0
+            fi
+            echo "Attempt $i/30: PhotoPrism not ready yet, waiting..."
+            sleep 10
+          done
+          echo 'PhotoPrism failed to start'
+          exit 1
+
 
       - uses: pnpm/action-setup@v4
         with:
