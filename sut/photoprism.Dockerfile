@@ -28,7 +28,7 @@ RUN npm ci --legacy-peer-deps && \
 FROM photoprism/photoprism:251130
 
 # Copy custom-built frontend
-COPY --from=frontend-builder /src/frontend/dist /opt/photoprism/assets/static
+COPY --from=frontend-builder /src/assets/static/build /opt/photoprism/assets/static/build
 
 # Environment configuration
 ENV PHOTOPRISM_WORKERS=2 \
