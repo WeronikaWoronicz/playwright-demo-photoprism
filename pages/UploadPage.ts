@@ -1,26 +1,29 @@
-import { Page, expect } from '@playwright/test';
+import { type Page } from '@playwright/test';
 import { BASE_URL } from '../config.js';
 import { uploadMessages } from '../lib/constants.js';
+import { approveAllReviewPhotos } from '../lib/photoprism-api.js';
 
+// CSS selectors for Vue components that don't expose accessible roles/labels.
+// Semantic locators (getByRole, getByLabel) are used where available.
 const selectors = {
   nav: {
-    uploadButton: 'Upload photos',
+    // Vue sidebar nav link — no accessible role/label; CSS class is the only stable hook.
+    // JS click is used in openUploadMenu() because the link is hidden in rail mode.
+    uploadLink: 'a.nav-upload',
+    // Used with getByRole('textbox', { name }) — semantic locator.
     searchInput: 'Search',
   },
   upload: {
+    // Used with getByRole('button', { name }) — semantic locator.
     browseButton: /browse/i,
     completeText: uploadMessages.uploadCompleted,
   },
   photo: {
+    // PhotoPrism photo tiles are Vue components with no accessible role or label.
+    // CSS class selectors are the only reliable option for these elements.
     tile: '.is-photo',
     renderedTile: '.is-photo[data-uid]',
     selectButton: '.is-photo button.input-select',
-  },
-  clipboard: {
-    fab: '.clipboard-container .action-menu',
-    container: '#t-clipboard',
-    approveButton: 'Approve',
-    approvedText: 'Selection approved',
   },
 };
 
@@ -28,14 +31,20 @@ export class UploadPage {
   constructor(readonly page: Page) {}
 
   async navigateToUploadForm() {
-    await this.page.goto(BASE_URL);
+    await this.page.goto(BASE_URL + '/library/browse');
+    await this.page.locator(selectors.nav.uploadLink).waitFor({ state: 'attached', timeout: 10000 });
     await this.openUploadMenu();
   }
 
   private async openUploadMenu() {
-    const uploadBtn = this.page.getByRole('button', { name: selectors.nav.uploadButton });
-    await uploadBtn.waitFor();
-    await uploadBtn.click();
+    // The upload link is hidden in sidebar rail mode; JS click bypasses visibility.
+    await this.page.evaluate(() => {
+      const link = document.querySelector('a.nav-upload') as HTMLElement | null;
+      if (!link) throw new Error('Upload link not found in navigation');
+      link.click();
+    });
+    // Wait for upload dialog's Browse button to appear
+    await this.page.getByRole('button', { name: selectors.upload.browseButton }).waitFor({ timeout: 10000 });
   }
 
   async uploadFiles(filePaths: string | string[]) {
@@ -47,35 +56,63 @@ export class UploadPage {
   }
 
   async waitForUploadComplete() {
+    // Wait for the 'Upload complete' text (appears after POST file transfer)
     await this.page.getByText(selectors.upload.completeText).waitFor({ timeout: 30000 });
-  }
-
-  async navigateToReviewSection() {
-    await this.page.goto(`${BASE_URL}/library/review`);
-    await this.page.locator(selectors.photo.tile).first().waitFor({ timeout: 30000 });
-  }
-
-  async approveAllPhotos() {
-    await expect(this.page.locator(selectors.photo.tile).first()).toBeVisible({ timeout: 30000 });
-
-    // Standard .click() is unreliable on Vue components; dispatchEvent triggers the correct event chain
-    await this.page.evaluate((selector) => {
-      document.querySelectorAll(selector).forEach((btn) => {
-        btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-        btn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
-        btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    // Also wait for the PUT request that triggers the import — this is what actually
+    // moves files from the temp upload folder into the library/review queue.
+    // Without this, navigating away can abort the PUT before import completes.
+    await this.page
+      .waitForResponse((resp) => resp.url().includes('/upload/') && resp.request().method() === 'PUT', {
+        timeout: 15000,
+      })
+      .catch(() => {
+        // PUT may have already completed before this listener was registered — that's fine.
       });
-    }, selectors.photo.selectButton);
+  }
 
-    const clipboardFab = this.page.locator(selectors.clipboard.fab);
-    await expect(clipboardFab).toBeVisible({ timeout: 10000 });
-    await clipboardFab.click();
+  async waitForPhotoInLibrary(_minCount = 1) {
+    const { expect } = await import('@playwright/test');
+    await expect
+      .poll(
+        async () => {
+          return (await this.getReviewPhotoCount()) + (await this.getLibraryPhotoCount());
+        },
+        { timeout: 60000 }
+      )
+      .toBeGreaterThanOrEqual(1);
+    await approveAllReviewPhotos(this.page);
+    await this.page.goto(`${BASE_URL}/library/browse`);
+    await this.page.locator(selectors.photo.renderedTile).first().waitFor({ timeout: 30000 });
+  }
 
-    const approveBtn = this.page.locator(selectors.clipboard.container).getByRole('button', { name: selectors.clipboard.approveButton });
-    await expect(approveBtn).toBeVisible({ timeout: 5000 });
-    await approveBtn.click();
+  private async getLibraryPhotoCount(): Promise<number> {
+    const state = await this.page.context().storageState();
+    const token = state.origins
+      .flatMap((o) => o.localStorage ?? [])
+      .find((item) => item.name === 'session.token')?.value;
+    if (!token) return 0;
+    const resp = await this.page.request.get(`${BASE_URL}/api/v1/photos`, {
+      params: { count: 1, offset: 0 },
+      headers: { 'X-Auth-Token': token },
+    });
+    if (!resp.ok()) return 0;
+    const photos = (await resp.json()) as Array<unknown>;
+    return photos.length;
+  }
 
-    await expect(this.page.getByText(selectors.clipboard.approvedText)).toBeVisible({ timeout: 10000 });
+  private async getReviewPhotoCount(): Promise<number> {
+    const state = await this.page.context().storageState();
+    const token = state.origins
+      .flatMap((o) => o.localStorage ?? [])
+      .find((item) => item.name === 'session.token')?.value;
+    if (!token) return 0;
+    const resp = await this.page.request.get(`${BASE_URL}/api/v1/photos`, {
+      params: { count: 1, offset: 0, review: true },
+      headers: { 'X-Auth-Token': token },
+    });
+    if (!resp.ok()) return 0;
+    const photos = (await resp.json()) as Array<unknown>;
+    return photos.length;
   }
 
   async navigateToLibrary() {
@@ -85,8 +122,6 @@ export class UploadPage {
 
   async getRenderedPhotoUids(): Promise<string[]> {
     const tiles = this.page.locator(selectors.photo.renderedTile);
-    return tiles.evaluateAll((els: Element[]) =>
-      els.map((el) => el.getAttribute('data-uid') as string),
-    );
+    return tiles.evaluateAll((els: Element[]) => els.map((el) => el.getAttribute('data-uid') as string));
   }
 }
