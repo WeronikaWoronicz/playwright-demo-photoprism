@@ -2,55 +2,60 @@ import { BrowserContext, Page } from '@playwright/test';
 import { BASE_URL } from '../config.js';
 
 export async function deleteAllPhotos(context: BrowserContext) {
-  const page = await context.newPage();
+  // Get token from storageState to avoid opening a page (which can hang on SPA load)
+  const state = await context.storageState();
+  const sessionToken = state.origins
+    .flatMap((o) => o.localStorage ?? [])
+    .find((item) => item.name === 'session.token')?.value;
 
-  try {
-    await page.goto(BASE_URL);
+  if (!sessionToken) {
+    // No auth token — nothing to clean up
+    return;
+  }
 
-    const sessionToken = await page.evaluate(() => window.localStorage.getItem('session.token'));
-    if (!sessionToken) {
-      throw new Error('No session token found in localStorage');
-    }
-
-    const reviewUIDs = await getAllPhotoUIDs(page, sessionToken, true);
-    if (reviewUIDs.length > 0) {
-      const approveResponse = await page.request.post(`${BASE_URL}/api/v1/batch/photos/approve`, {
-        data: { photos: reviewUIDs },
-        headers: { 'X-Auth-Token': sessionToken },
-      });
-      if (!approveResponse.ok()) {
-        throw new Error(`Failed to approve review photos before delete: ${approveResponse.status()}`);
-      }
-    }
-
-    const photoUIDs = await getAllPhotoUIDs(page, sessionToken, false);
-    if (photoUIDs.length === 0) {
-      return;
-    }
-
-    const response = await page.request.post(`${BASE_URL}/api/v1/batch/photos/delete`, {
-      data: {
-        photos: photoUIDs,
-      },
-      headers: {
-        'X-Auth-Token': sessionToken,
-      },
+  // Approve any photos in review queue first (so they can be deleted)
+  const reviewUIDs = await getAllPhotoUIDsViaContext(context, sessionToken, { review: true });
+  if (reviewUIDs.length > 0) {
+    const approveResponse = await context.request.post(`${BASE_URL}/api/v1/batch/photos/approve`, {
+      data: { photos: reviewUIDs },
+      headers: { 'X-Auth-Token': sessionToken },
     });
-
-    if (!response.ok()) {
-      throw new Error(`Failed to delete photos: ${response.status()}`);
+    if (!approveResponse.ok()) {
+      throw new Error(`Failed to approve review photos before delete: ${approveResponse.status()}`);
     }
-  } finally {
-    await page.close();
+  }
+
+  // Collect all photo UIDs: normal library + archived (archived photos block re-upload of same file)
+  const [normalUIDs, archivedUIDs] = await Promise.all([
+    getAllPhotoUIDsViaContext(context, sessionToken, {}),
+    getAllPhotoUIDsViaContext(context, sessionToken, { archived: true }),
+  ]);
+  const allUIDs = [...new Set([...normalUIDs, ...archivedUIDs])];
+
+  if (allUIDs.length === 0) {
+    return;
+  }
+
+  const response = await context.request.post(`${BASE_URL}/api/v1/batch/photos/delete`, {
+    data: { photos: allUIDs },
+    headers: { 'X-Auth-Token': sessionToken },
+  });
+
+  if (!response.ok()) {
+    throw new Error(`Failed to delete photos: ${response.status()}`);
   }
 }
 
-async function getAllPhotoUIDs(page: Page, sessionToken: string, review = false): Promise<string[]> {
-  const response = await page.request.get(`${BASE_URL}/api/v1/photos`, {
+async function getAllPhotoUIDsViaContext(
+  context: BrowserContext,
+  sessionToken: string,
+  params: { review?: boolean; archived?: boolean }
+): Promise<string[]> {
+  const response = await context.request.get(`${BASE_URL}/api/v1/photos`, {
     params: {
       count: 10000,
       offset: 0,
-      ...(review ? { review: true } : {}),
+      ...params,
     },
     headers: {
       'X-Auth-Token': sessionToken,
@@ -65,14 +70,32 @@ async function getAllPhotoUIDs(page: Page, sessionToken: string, review = false)
   return data.map((photo) => photo.UID);
 }
 
-export async function getPhotos(
-  page: Page,
-  count: number,
-): Promise<Array<{ UID: string; OriginalName: string }>> {
-  const state = await page.context().storageState();
-  const token = state.origins
+export async function deleteAllAlbums(context: BrowserContext) {
+  const state = await context.storageState();
+  const sessionToken = state.origins
     .flatMap((o) => o.localStorage ?? [])
     .find((item) => item.name === 'session.token')?.value;
+
+  if (!sessionToken) return;
+
+  const response = await context.request.get(`${BASE_URL}/api/v1/albums`, {
+    params: { count: 10000 },
+    headers: { 'X-Auth-Token': sessionToken },
+  });
+  if (!response.ok()) return;
+  const albums = (await response.json()) as Array<{ UID: string }>;
+  if (albums.length === 0) return;
+
+  for (const album of albums) {
+    await context.request.delete(`${BASE_URL}/api/v1/albums/${album.UID}`, {
+      headers: { 'X-Auth-Token': sessionToken },
+    });
+  }
+}
+
+export async function getPhotos(page: Page, count: number): Promise<Array<{ UID: string; OriginalName: string }>> {
+  const state = await page.context().storageState();
+  const token = state.origins.flatMap((o) => o.localStorage ?? []).find((item) => item.name === 'session.token')?.value;
 
   if (!token) {
     throw new Error('No session token found in storage state');
@@ -86,4 +109,31 @@ export async function getPhotos(
     throw new Error(`Failed to get photos: ${response.status()}`);
   }
   return response.json() as Promise<Array<{ UID: string; OriginalName: string }>>;
+}
+
+/**
+ * Approves all photos currently in the review queue via API.
+ * Test assets are low-quality (quality=2) and always land in review.
+ * Call this after waitForUploadComplete() to move photos to the main library.
+ */
+export async function approveAllReviewPhotos(page: Page): Promise<void> {
+  const state = await page.context().storageState();
+  const token = state.origins.flatMap((o) => o.localStorage ?? []).find((item) => item.name === 'session.token')?.value;
+  if (!token) throw new Error('No session token found in storage state');
+
+  const listResp = await page.request.get(`${BASE_URL}/api/v1/photos`, {
+    params: { count: 10000, offset: 0, review: true },
+    headers: { 'X-Auth-Token': token },
+  });
+  if (!listResp.ok()) throw new Error(`Failed to list review photos: ${listResp.status()}`);
+
+  const photos = (await listResp.json()) as Array<{ UID: string }>;
+  if (photos.length === 0) return;
+
+  const uids = photos.map((p) => p.UID);
+  const approveResp = await page.request.post(`${BASE_URL}/api/v1/batch/photos/approve`, {
+    data: { photos: uids },
+    headers: { 'X-Auth-Token': token },
+  });
+  if (!approveResp.ok()) throw new Error(`Failed to approve review photos: ${approveResp.status()}`);
 }

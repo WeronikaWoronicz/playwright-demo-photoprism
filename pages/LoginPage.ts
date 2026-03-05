@@ -2,8 +2,8 @@ import { type Page } from '@playwright/test';
 
 const selectors = {
   input: {
-    userName: '#auth-username',
-    password: '#auth-password',
+    userName: 'input[name="username"]',
+    password: 'input[type="password"]',
   },
   buttons: {
     signIn: 'Sign in',
@@ -43,5 +43,11 @@ export class LoginPage {
 
   async fillPassword(password: string) {
     await this.page.locator(selectors.input.password).fill(password);
+  }
+
+  async login(username: string, password: string) {
+    await this.fillUserName(username);
+    await this.fillPassword(password);
+    await this.clickSignInBtn();
   }
 }
