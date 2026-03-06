@@ -42,6 +42,23 @@ function download(url: string, dest: string, redirects = 0): Promise<string> {
       { name: 'photo-4.jpg', width: 1600, height: 1200, seed: '4' },
     ];
 
+    const perTestImages = [
+      { subdir: 'upload-single', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'upl-single-1' },
+      { subdir: 'upload-multiple', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'upl-multi-1' },
+      { subdir: 'upload-multiple', name: 'photo-2.jpg', width: 1600, height: 1200, seed: 'upl-multi-2' },
+      { subdir: 'upload-multiple', name: 'photo-3.jpg', width: 1600, height: 1200, seed: 'upl-multi-3' },
+      { subdir: 'upload-large', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'upl-large-1' },
+      { subdir: 'image-ops', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'img-ops-1' },
+      { subdir: 'metadata-edit', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'meta-edit-1' },
+      { subdir: 'delete-undo', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'del-undo-1' },
+      { subdir: 'browse-filter-sort', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'browse-1' },
+      { subdir: 'browse-filter-sort', name: 'photo-2.jpg', width: 1600, height: 1200, seed: 'browse-2' },
+      { subdir: 'search', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'search-1' },
+      { subdir: 'share-link', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'share-1' },
+      { subdir: 'concurrent-edits', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'conc-edit-1' },
+      { subdir: 'album-crud', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'album-crud-1' },
+    ];
+
     const tasks = images.map((img) => {
       const url = `https://picsum.photos/seed/${encodeURIComponent(img.seed)}/${img.width}/${img.height}`;
       const dest = path.join(out, img.name);
@@ -49,7 +66,16 @@ function download(url: string, dest: string, redirects = 0): Promise<string> {
       return download(url, dest).then(() => console.log('Saved', dest));
     });
 
-    await Promise.all(tasks);
+    const perTestTasks = perTestImages.map((img) => {
+      const subOut = path.join(out, img.subdir);
+      if (!fs.existsSync(subOut)) fs.mkdirSync(subOut, { recursive: true });
+      const url = `https://picsum.photos/seed/${encodeURIComponent(img.seed)}/${img.width}/${img.height}`;
+      const dest = path.join(subOut, img.name);
+      console.log('Downloading', url, '->', dest);
+      return download(url, dest).then(() => console.log('Saved', dest));
+    });
+
+    await Promise.all([...tasks, ...perTestTasks]);
     console.log('All test images downloaded into', out);
   } catch (err) {
     console.error('Error downloading images:', err);

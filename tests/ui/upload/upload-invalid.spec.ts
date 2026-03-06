@@ -3,7 +3,10 @@ import { test } from '../../../fixtures/pages.js';
 import { expect } from '@playwright/test';
 
 test.describe('Invalid file upload', () => {
-  test('TC-UPL-004 User sees no photo record after uploading non-image file @P1', async ({ uploadPage }) => {
+  test('TC-UPL-004 User sees no photo record after uploading non-image file @P1', async ({
+    uploadPage,
+    libraryPage,
+  }) => {
     const invalidFile = path.join(process.cwd(), 'test-assets', 'photo-invalid.txt');
 
     await uploadPage.navigateToUploadForm();
@@ -11,7 +14,7 @@ test.describe('Invalid file upload', () => {
     await uploadPage.waitForUploadComplete();
 
     await uploadPage.navigateToLibrary();
-    const count = await uploadPage.page.locator('.is-photo').count();
+    const count = await libraryPage.getPhotoCount();
     expect(count).toBe(0);
   });
 });

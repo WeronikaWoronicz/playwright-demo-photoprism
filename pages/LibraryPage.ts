@@ -50,4 +50,12 @@ export class LibraryPage {
     });
     await this.page.locator('.clipboard-container .action-menu').waitFor({ timeout: 15000 });
   }
+
+  async clickPhoto(uid: string) {
+    await this.page.locator(`.is-photo[data-uid="${uid}"]`).click();
+  }
+
+  async waitForPhoto(uid: string, timeout = 15000) {
+    await this.page.locator(`.is-photo[data-uid="${uid}"]`).waitFor({ state: 'visible', timeout });
+  }
 }

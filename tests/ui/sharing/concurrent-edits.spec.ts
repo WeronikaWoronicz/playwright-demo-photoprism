@@ -3,6 +3,7 @@ import { test } from '../../../fixtures/pages.js';
 import { expect } from '@playwright/test';
 import { getPhotos } from '../../../lib/photoprism-api.js';
 import { PhotoDetailPage } from '../../../pages/PhotoDetailPage.js';
+import { LibraryPage } from '../../../pages/LibraryPage.js';
 import { BASE_URL } from '../../../config.js';
 
 test.describe('Concurrent Edits', () => {
@@ -27,12 +28,10 @@ test.describe('Concurrent Edits', () => {
     const [page1, page2] = await Promise.all([context1.newPage(), context2.newPage()]);
 
     await Promise.all([page1.goto(BASE_URL + '/library/browse'), page2.goto(BASE_URL + '/library/browse')]);
-    const photoSelector = `.is-photo[data-uid="${uid}"]`;
-    await Promise.all([
-      page1.locator(photoSelector).waitFor({ timeout: 15000 }),
-      page2.locator(photoSelector).waitFor({ timeout: 15000 }),
-    ]);
-    await Promise.all([page1.locator(photoSelector).click(), page2.locator(photoSelector).click()]);
+    const libraryPage1 = new LibraryPage(page1);
+    const libraryPage2 = new LibraryPage(page2);
+    await Promise.all([libraryPage1.waitForPhoto(uid), libraryPage2.waitForPhoto(uid)]);
+    await Promise.all([libraryPage1.clickPhoto(uid), libraryPage2.clickPhoto(uid)]);
 
     const photoDetailPage1 = new PhotoDetailPage(page1);
     const photoDetailPage2 = new PhotoDetailPage(page2);

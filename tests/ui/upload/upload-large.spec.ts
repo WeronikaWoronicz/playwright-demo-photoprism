@@ -5,6 +5,7 @@ import { expect } from '@playwright/test';
 test.describe('Upload network failure', () => {
   test('TC-UPL-005 User sees error state when network aborts during upload @P1', async ({
     uploadPage,
+    libraryPage,
     page,
     a11yCheck,
   }) => {
@@ -23,6 +24,6 @@ test.describe('Upload network failure', () => {
     await page.unroute('**/api/v1/upload/**');
 
     await uploadPage.navigateToLibrary();
-    await expect(page.locator('.is-photo')).toHaveCount(0);
+    expect(await libraryPage.getPhotoCount()).toBe(0);
   });
 });
