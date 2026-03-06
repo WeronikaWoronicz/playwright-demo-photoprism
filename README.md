@@ -1,30 +1,47 @@
 # Playwright demo photoprism
 
+End-to-end test suite for [PhotoPrism](https://www.photoprism.app/) using Playwright.
+
 ## Technology Stack
 
-- Playwright **latest**
-- Node.js **16.latest**
-- pnpm
-- Docker
+- [Playwright](https://playwright.dev/) + TypeScript
+- Node.js, pnpm
+- ESLint + Prettier
+- Docker + Docker Compose + MariaDB
+- [OpenCode](https://github.com/nicepkg/opencode) + [Oh-My-OpenCode](https://github.com/anthropics/oh-my-opencode) (agentic development)
+- [axe-core](https://github.com/dequelabs/axe-core) for accessibility testing
 
-## Run local app :
+## About PhotoPrism
 
-Install docker on your local machine. Then to run app you need to execute commands below:
+[PhotoPrism](https://github.com/photoprism/photoprism) is an AI-powered, self-hosted photos app built with Go and Vue.js. This project tests the Community Edition via a custom Docker build that includes an accessibility patch.
 
-```
-cd .\photoprism
+### Accessibility patch
+
+PhotoPrism's Vue frontend uses many custom components that lack accessible roles and labels, making reliable test automation difficult. As part of this project, we created `patches/navigation-accessibility.patch` which adds `role="button"` and `aria-label` attributes to the sidebar navigation, upload link, photo tiles, and other interactive elements. It is applied at Docker build time against a pinned PhotoPrism commit (`f6d2026`).
+
+The `sut/` directory contains two Dockerfile variants:
+
+- **`Dockerfile`** — full source build (`photoprism/develop:jammy`), compiles both Go backend and webpack frontend with the patch applied.
+- **`photoprism.Dockerfile`** — lighter approach that rebuilds only the frontend on top of an official release image (`photoprism/photoprism:251130`).
+
+## Run local app
+
+Install Docker, then build and start the patched PhotoPrism instance:
+
+```bash
+cd sut
 docker compose up -d
 ```
 
-Now your app is available on your localhost.
+The app will be available at `http://127.0.0.1:2342`.
 
-## Environment configuration
+## Environment setup
 
 The test suite reads environment variables from `env/local.env` (loaded automatically by `playwright.config.ts` via `dotenv`).
 
 To set up your environment, copy the template and fill in your credentials:
 
-```
+```bash
 cp env/example_local.env env/local.env
 ```
 
@@ -40,37 +57,68 @@ Default credentials for a local PhotoPrism instance can be found in the [PhotoPr
 
 > **Note:** `env/local.env` is gitignored and will not be committed. Only `env/example_local.env` is tracked.
 
-## Install dependencies :
+## Install dependencies
 
-```
+```bash
 pnpm install
-pnpm playwright install
+pnpm exec playwright install
 ```
 
 ## Generating test assets
 
-```
-npx ts-node .\scripts\generate-test-assets-picsum.ts
+```bash
+pnpm run generate:test-assets
 ```
 
-## Test execution:
+## Test execution
 
-To run all tests headed
+Run all tests:
 
+```bash
+pnpm exec playwright test
 ```
+
+Run headed:
+
+```bash
 pnpm exec playwright test --headed
 ```
 
-## Code linting and formatting :
+## Code linting and formatting
 
-To format and lint the code use:
+Format and lint:
 
-```
+```bash
 pnpm format
 ```
 
-To validate the code use:
+Validate (types + format + lint):
+
+```bash
+pnpm validate
+```
+
+## Agentic development
+
+Test cases in this project were authored using an agentic workspace powered by [OpenCode](https://github.com/nicepkg/opencode) with the [Oh-My-OpenCode](https://github.com/anthropics/oh-my-opencode) harness. The combination provides structured task orchestration, specialist delegation, and iterative verification — all driven from the terminal.
+
+The workspace configuration (`.opencode/` and skill definitions) that shaped how the agents write and review tests will be published separately. Stay tuned.
+
+## Project structure
 
 ```
-pnpm validate
+tests/
+  api/              API endpoint tests
+  ui/
+    admin/          Album CRUD, admin features
+    auth/           Login, RBAC, session expiry
+    library/        Browse, filter, sort, search, deep links
+    photos/         Metadata edit, image ops, delete/undo
+    sharing/        Share links, concurrent edits
+    upload/         Single, multiple, large, invalid uploads
+    accessibility/  a11y smoke tests
+pages/              Page Object Models
+fixtures/           Playwright fixtures and test data
+lib/                API helpers, auth, accessibility utils
+env/                Environment config files
 ```

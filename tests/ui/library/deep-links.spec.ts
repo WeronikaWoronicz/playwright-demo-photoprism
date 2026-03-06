@@ -4,7 +4,6 @@ import { BASE_URL } from '../../../config.js';
 
 test.describe('URL Routing and Deep Links', () => {
   test('TC-LIB-007 User sees login redirect when accessing library unauthenticated @P0', async ({ browser }) => {
-    // Create a fresh unauthenticated context to avoid addInitScript re-injecting auth
     const unauthCtx = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const unauthPage = await unauthCtx.newPage();
     await unauthPage.goto(BASE_URL + '/library/browse');

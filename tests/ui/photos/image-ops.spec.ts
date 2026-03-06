@@ -24,7 +24,6 @@ test.describe('Photo Image Operations', () => {
 
     await page.getByRole('tab', { name: /files/i }).click();
 
-    // Set up response listener BEFORE rotating — orientation change auto-saves via PUT
     const saveResponsePromise = page.waitForResponse(
       (resp) => resp.url().includes('/api/v1/photos/') && resp.request().method() === 'PUT',
       { timeout: 15000 }

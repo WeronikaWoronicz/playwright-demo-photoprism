@@ -3,24 +3,18 @@ import { BASE_URL } from '../config.js';
 import { uploadMessages } from '../lib/constants.js';
 import { approveAllReviewPhotos } from '../lib/photoprism-api.js';
 
-// CSS selectors for Vue components that don't expose accessible roles/labels.
-// Semantic locators (getByRole, getByLabel) are used where available.
 const selectors = {
   nav: {
-    // Vue sidebar nav link — no accessible role/label; CSS class is the only stable hook.
-    // JS click is used in openUploadMenu() because the link is hidden in rail mode.
+    // No accessible role/label — CSS class is the only stable hook.
     uploadLink: 'a.nav-upload',
-    // Used with getByRole('textbox', { name }) — semantic locator.
     searchInput: 'Search',
   },
   upload: {
-    // Used with getByRole('button', { name }) — semantic locator.
     browseButton: /browse/i,
     completeText: uploadMessages.uploadCompleted,
   },
   photo: {
-    // PhotoPrism photo tiles are Vue components with no accessible role or label.
-    // CSS class selectors are the only reliable option for these elements.
+    // Vue components with no accessible role/label — CSS selectors required.
     tile: '.is-photo',
     renderedTile: '.is-photo[data-uid]',
     selectButton: '.is-photo button.input-select',
@@ -37,13 +31,12 @@ export class UploadPage {
   }
 
   private async openUploadMenu() {
-    // The upload link is hidden in sidebar rail mode; JS click bypasses visibility.
+    // JS click bypasses visibility — upload link is hidden in sidebar rail mode.
     await this.page.evaluate(() => {
       const link = document.querySelector('a.nav-upload') as HTMLElement | null;
       if (!link) throw new Error('Upload link not found in navigation');
       link.click();
     });
-    // Wait for upload dialog's Browse button to appear
     await this.page.getByRole('button', { name: selectors.upload.browseButton }).waitFor({ timeout: 10000 });
   }
 
@@ -56,17 +49,14 @@ export class UploadPage {
   }
 
   async waitForUploadComplete() {
-    // Wait for the 'Upload complete' text (appears after POST file transfer)
     await this.page.getByText(selectors.upload.completeText).waitFor({ timeout: 30000 });
-    // Also wait for the PUT request that triggers the import — this is what actually
-    // moves files from the temp upload folder into the library/review queue.
-    // Without this, navigating away can abort the PUT before import completes.
+    // Wait for the PUT import request — navigating away before it completes can abort the import.
     await this.page
       .waitForResponse((resp) => resp.url().includes('/upload/') && resp.request().method() === 'PUT', {
         timeout: 15000,
       })
       .catch(() => {
-        // PUT may have already completed before this listener was registered — that's fine.
+        // PUT may have already completed before this listener was registered.
       });
   }
 
