@@ -10,7 +10,6 @@ function download(url: string, dest: string, redirects = 0): Promise<string> {
     if (redirects > 5) return reject(new Error('Too many redirects'));
     https
       .get(url, (res) => {
-        // follow redirects
         if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
           const next = res.headers.location.startsWith('http')
             ? res.headers.location
