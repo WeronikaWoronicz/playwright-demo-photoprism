@@ -2,18 +2,13 @@ import { BrowserContext, Page } from '@playwright/test';
 import { BASE_URL } from '../config.js';
 
 export async function deleteAllPhotos(context: BrowserContext) {
-  // Get token from storageState to avoid opening a page (which can hang on SPA load)
   const state = await context.storageState();
   const sessionToken = state.origins
     .flatMap((o) => o.localStorage ?? [])
     .find((item) => item.name === 'session.token')?.value;
 
-  if (!sessionToken) {
-    // No auth token — nothing to clean up
-    return;
-  }
+  if (!sessionToken) return;
 
-  // Approve any photos in review queue first (so they can be deleted)
   const reviewUIDs = await getAllPhotoUIDsViaContext(context, sessionToken, { review: true });
   if (reviewUIDs.length > 0) {
     const approveResponse = await context.request.post(`${BASE_URL}/api/v1/batch/photos/approve`, {
@@ -25,7 +20,6 @@ export async function deleteAllPhotos(context: BrowserContext) {
     }
   }
 
-  // Collect all photo UIDs: normal library + archived (archived photos block re-upload of same file)
   const [normalUIDs, archivedUIDs] = await Promise.all([
     getAllPhotoUIDsViaContext(context, sessionToken, {}),
     getAllPhotoUIDsViaContext(context, sessionToken, { archived: true }),

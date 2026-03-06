@@ -2,7 +2,7 @@ import { type Page } from '@playwright/test';
 
 const selectors = {
   photo: {
-    // CSS class selector — no accessible role/label exposed for this Vue component button
+    // No accessible role/label — CSS class is the only stable hook.
     editTitleButton: '.action-title-edit',
     titleInput: 'Title',
     descriptionInput: 'Caption',
@@ -21,12 +21,9 @@ export class PhotoDetailPage {
   }
 
   async openEditPanel() {
-    // Wait for the sidebar to be fully rendered — .meta-filename is the last element to appear.
     await this.page.locator('.meta-filename').waitFor({ state: 'visible', timeout: 15000 });
-    // Use evaluate to click the button via JavaScript — more reliable than Playwright click
-    // for Vue components where the click handler may not be registered immediately.
+    // JS click — Vue click handler may not be registered when Playwright tries to click.
     await this.page.locator(selectors.photo.editTitleButton).evaluate((el: HTMLElement) => el.click());
-    // Wait for the Details tab to confirm the panel is open and rendered.
     await this.page.getByRole('tab', { name: /details/i }).waitFor({ timeout: 15000 });
   }
 
@@ -54,10 +51,8 @@ export class PhotoDetailPage {
   }
 
   async rotatePhoto() {
-    // The rotate operation is via the Orientation combobox in the Files tab
-    // Click the outer Orientation combobox container (cursor=pointer) — NOT the hidden inner input
+    // Click the outer combobox container — NOT the hidden inner input.
     await this.page.getByRole('row', { name: 'Orientation' }).getByRole('combobox').first().click();
-    // Select 90° rotation
     await this.page.getByRole('option', { name: '90°' }).click();
   }
 }
