@@ -5,6 +5,8 @@ dotenv.config({
   path: `env/${process.env['NODE_ENV'] ? `${process.env['NODE_ENV']}.env` : `local.env`}`,
 });
 
+const workers = process.env['CI'] ? 4 : 8;
+
 export default defineConfig({
   testDir: './tests',
   outputDir: './test-results',
@@ -22,7 +24,8 @@ export default defineConfig({
     timeout: 10000,
   },
   retries: process.env['CI'] ? 2 : 0,
-  workers: 1,
+  fullyParallel: true,
+  workers,
   projects: [
     {
       name: 'setup',
@@ -44,7 +47,6 @@ export default defineConfig({
     {
       name: 'user-chromium',
       dependencies: ['user-setup'],
-      // Exclude admin-only tests that require admin storageState and cause race conditions
       testIgnore: ['**/admin/**'],
       use: {
         browserName: 'chromium',

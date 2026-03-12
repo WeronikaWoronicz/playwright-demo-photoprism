@@ -1,7 +1,7 @@
-import path from 'path';
 import { test } from '../../../fixtures/pages.js';
 import { expect } from '@playwright/test';
 import { BASE_URL } from '../../../config.js';
+import { createPath } from '../../../lib/assets.js';
 
 test.describe('Library Search', () => {
   test('TC-LIB-004 User sees empty state when search returns no results @P1', async ({ page, searchPage }) => {
@@ -13,7 +13,7 @@ test.describe('Library Search', () => {
 
   test('TC-LIB-005 User can find uploaded photo via search @P0', async ({ uploadPage, searchPage, page }) => {
     await uploadPage.navigateToUploadForm();
-    await uploadPage.uploadFiles(path.join(process.cwd(), 'test-assets', 'photo-1.jpg'));
+    await uploadPage.uploadFiles(createPath('test-assets', 'search', 'photo-1.jpg'));
     await uploadPage.waitForUploadComplete();
     await uploadPage.waitForPhotoInLibrary();
 

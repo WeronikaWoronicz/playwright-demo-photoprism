@@ -1,24 +1,23 @@
-import path from 'path';
 import { test } from '../../../fixtures/pages.js';
 import { expect } from '@playwright/test';
+import { createPath } from '../../../lib/assets.js';
 
 test.describe('Photo Delete', () => {
   test('TC-PHO-003 User can delete a photo @P1', async ({ uploadPage, libraryPage, photoDetailPage }) => {
     await uploadPage.navigateToUploadForm();
-    await uploadPage.uploadFiles(path.join(process.cwd(), 'test-assets', 'photo-1.jpg'));
+    await uploadPage.uploadFiles(createPath('test-assets', 'delete-undo', 'photo-1.jpg'));
     await uploadPage.waitForUploadComplete();
     await uploadPage.waitForPhotoInLibrary();
 
-    await libraryPage.navigateToBrowse();
-    await libraryPage.waitForPhotos();
-    const countBefore = await libraryPage.getPhotoCount();
-    expect(countBefore).toBeGreaterThanOrEqual(1);
+    const uid = uploadPage.trackedUids[0];
+    expect(uid).toBeTruthy();
 
-    await libraryPage.selectFirstPhoto();
+    await libraryPage.navigateToBrowse();
+    await libraryPage.waitForPhoto(uid);
+    await libraryPage.selectPhoto(uid);
     await photoDetailPage.archiveSelectedPhoto();
 
     await libraryPage.navigateToBrowse();
-    const countAfter = await libraryPage.getPhotoCount();
-    expect(countAfter).toBe(countBefore - 1);
+    await libraryPage.waitForPhotoGone(uid);
   });
 });

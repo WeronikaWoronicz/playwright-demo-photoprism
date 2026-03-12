@@ -4,17 +4,13 @@ import { BASE_URL } from '../config.js';
 const selectors = {
   albums: {
     path: '/library/albums',
-    // PhotoPrism album cards are Vue components — CSS class is the only stable hook.
     card: 'div.result.is-album',
-    // Title button inside album card — no accessible role/label; CSS class selector required.
     titleButton: 'button.action-title-edit',
   },
   toolbar: {
-    // Vue toolbar "+" button — no accessible role/label; CSS class is the only stable hook.
     addButton: 'button.action-add[title="Add Album"]',
   },
   editDialog: {
-    // Album edit dialog title input — Vue component with no accessible label; CSS class required.
     titleInput: '.input-title input',
     confirmButton: 'button.action-confirm',
   },
@@ -31,7 +27,7 @@ export class AlbumPage {
   async clickAddAlbum() {
     await this.page.locator(selectors.toolbar.addButton).waitFor({ state: 'visible', timeout: 15000 });
     await this.page.locator(selectors.toolbar.addButton).click();
-    await this.page.getByText('Album created').waitFor({ timeout: 10000 });
+    await this.page.locator(selectors.albums.card).first().waitFor({ state: 'visible', timeout: 10000 });
   }
 
   async typeAlbumName(name: string) {

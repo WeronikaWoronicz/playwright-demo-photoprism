@@ -51,11 +51,26 @@ export class LibraryPage {
     await this.page.locator('.clipboard-container .action-menu').waitFor({ timeout: 15000 });
   }
 
+  async selectPhoto(uid: string): Promise<void> {
+    await this.page.locator(`.is-photo[data-uid="${uid}"]`).waitFor({ timeout: 15000 });
+    await this.page.evaluate((targetUid: string) => {
+      const appEl = document.querySelector('#app') as HTMLElement & {
+        __vue_app__: { config: { globalProperties: { $clipboard: { toggle(m: { getId(): string }): boolean } } } };
+      };
+      appEl.__vue_app__.config.globalProperties.$clipboard.toggle({ getId: () => targetUid });
+    }, uid);
+    await this.page.locator('.clipboard-container .action-menu').waitFor({ timeout: 15000 });
+  }
+
   async clickPhoto(uid: string) {
     await this.page.locator(`.is-photo[data-uid="${uid}"]`).click();
   }
 
   async waitForPhoto(uid: string, timeout = 15000) {
     await this.page.locator(`.is-photo[data-uid="${uid}"]`).waitFor({ state: 'visible', timeout });
+  }
+
+  async waitForPhotoGone(uid: string, timeout = 10000) {
+    await this.page.locator(`.is-photo[data-uid="${uid}"]`).waitFor({ state: 'hidden', timeout });
   }
 }

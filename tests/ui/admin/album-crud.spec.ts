@@ -1,8 +1,8 @@
-import path from 'path';
 import { test } from '../../../fixtures/pages.js';
 import { expect } from '@playwright/test';
+import { createPath } from '../../../lib/assets.js';
 
-test.describe('Album CRUD', () => {
+test.describe.serial('Album CRUD', () => {
   test.use({ storageState: 'playwright/.auth/adminState.json' });
 
   test('TC-ALB-001 User can create an album through UI @P0', async ({ albumPage, page }) => {
@@ -36,7 +36,7 @@ test.describe('Album CRUD', () => {
     const albumUid = await albumPage.createAlbumViaAPI('E2E Test Album');
 
     await uploadPage.navigateToUploadForm();
-    await uploadPage.uploadFiles(path.join(process.cwd(), 'test-assets', 'photo-1.jpg'));
+    await uploadPage.uploadFiles(createPath('test-assets', 'album-crud', 'photo-1.jpg'));
     await uploadPage.waitForUploadComplete();
     await uploadPage.waitForPhotoInLibrary();
 

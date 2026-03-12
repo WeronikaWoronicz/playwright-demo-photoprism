@@ -1,10 +1,9 @@
-import path from 'path';
 import { test } from '../../../fixtures/pages.js';
 import { expect } from '@playwright/test';
-import { getPhotos } from '../../../lib/photoprism-api.js';
 import { PhotoDetailPage } from '../../../pages/PhotoDetailPage.js';
 import { LibraryPage } from '../../../pages/LibraryPage.js';
 import { BASE_URL } from '../../../config.js';
+import { createPath } from '../../../lib/assets.js';
 
 test.describe('Concurrent Edits', () => {
   test('TC-CONC-001 User sees last-write-wins when two users edit the same photo title concurrently @P2', async ({
@@ -13,13 +12,12 @@ test.describe('Concurrent Edits', () => {
     browser,
   }) => {
     await uploadPage.navigateToUploadForm();
-    await uploadPage.uploadFiles(path.join(process.cwd(), 'test-assets', 'photo-1.jpg'));
+    await uploadPage.uploadFiles(createPath('test-assets', 'concurrent-edits', 'photo-1.jpg'));
     await uploadPage.waitForUploadComplete();
     await uploadPage.waitForPhotoInLibrary();
 
-    const photos = await getPhotos(page, 1);
-    expect(photos.length).toBeGreaterThanOrEqual(1);
-    const uid = photos[0].UID;
+    const uid = uploadPage.trackedUids[0];
+    expect(uid).toBeTruthy();
 
     const [context1, context2] = await Promise.all([
       browser.newContext({ storageState: 'playwright/.auth/adminState.json' }),
@@ -56,9 +54,14 @@ test.describe('Concurrent Edits', () => {
     await context1.close();
     await context2.close();
 
-    const updatedPhotos = await getPhotos(page, 1);
-    expect(updatedPhotos.length).toBeGreaterThanOrEqual(1);
-    const updatedPhoto = updatedPhotos[0] as { UID: string; OriginalName: string; Title: string };
+    const state = await page.context().storageState();
+    const token = state.origins
+      .flatMap((o) => o.localStorage ?? [])
+      .find((item) => item.name === 'session.token')?.value;
+    const resp = await page.request.get(`${BASE_URL}/api/v1/photos/${uid}`, {
+      headers: { 'X-Auth-Token': token ?? '' },
+    });
+    const updatedPhoto = (await resp.json()) as { UID: string; Title: string };
     expect(updatedPhoto.Title).toBe('Title From User 2');
   });
 });

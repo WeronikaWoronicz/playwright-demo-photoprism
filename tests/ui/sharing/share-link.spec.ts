@@ -1,8 +1,7 @@
-import path from 'path';
 import { test } from '../../../fixtures/pages.js';
 import { expect } from '@playwright/test';
 import { BASE_URL } from '../../../config.js';
-import { getPhotos } from '../../../lib/photoprism-api.js';
+import { createPath } from '../../../lib/assets.js';
 
 test.describe('Public Share Link', () => {
   test('TC-SHR-001 User sees authentication required for non-shared photo URL @P1', async ({ browser }) => {
@@ -22,15 +21,12 @@ test.describe('Public Share Link', () => {
     browser,
   }) => {
     await uploadPage.navigateToUploadForm();
-    await uploadPage.uploadFiles(path.join(process.cwd(), 'test-assets', 'photo-1.jpg'));
+    await uploadPage.uploadFiles(createPath('test-assets', 'share-link', 'photo-1.jpg'));
     await uploadPage.waitForUploadComplete();
     await uploadPage.waitForPhotoInLibrary();
 
-    await page.goto(BASE_URL);
-
-    const photos = await getPhotos(page, 1);
-    expect(photos.length).toBeGreaterThanOrEqual(1);
-    const photoUid = photos[0].UID;
+    const photoUid = uploadPage.trackedUids[0];
+    expect(photoUid).toBeTruthy();
 
     const token = await sharePage.createShareLink(photoUid, page.request);
     expect(token).toBeTruthy();
