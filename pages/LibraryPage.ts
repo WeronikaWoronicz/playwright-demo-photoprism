@@ -70,7 +70,7 @@ export class LibraryPage {
     await this.page.locator(`.is-photo[data-uid="${uid}"]`).waitFor({ state: 'visible', timeout });
   }
 
-  async waitForPhotoGone(uid: string, timeout = 10000) {
+  async waitForPhotoDisappearing(uid: string, timeout = 10000) {
     await this.page.locator(`.is-photo[data-uid="${uid}"]`).waitFor({ state: 'hidden', timeout });
   }
 }

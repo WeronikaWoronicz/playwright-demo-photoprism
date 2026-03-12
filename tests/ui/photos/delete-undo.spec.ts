@@ -18,6 +18,6 @@ test.describe('Photo Delete', () => {
     await photoDetailPage.archiveSelectedPhoto();
 
     await libraryPage.navigateToBrowse();
-    await libraryPage.waitForPhotoGone(uid);
+    await libraryPage.waitForPhotoDisappearing(uid);
   });
 });
