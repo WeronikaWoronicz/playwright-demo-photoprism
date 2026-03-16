@@ -17,7 +17,7 @@ RUN git clone https://github.com/photoprism/photoprism.git . && \
 
 # Copy accessibility patch from build context
 COPY sut/patches/navigation-accessibility.patch ./
-RUN git apply navigation-accessibility.patch
+RUN git apply --allow-empty navigation-accessibility.patch
 
 # Install and build frontend
 WORKDIR /src/frontend
