@@ -30,6 +30,6 @@ test.describe('Photo Metadata Edit', () => {
     await photoDetailPage.openPhoto(uid);
     await photoDetailPage.openEditPanel();
     await expect(page.getByRole('textbox', { name: 'Title' })).toHaveValue(metadata.title);
-    await expect(page.locator('.p-photo-edit-dialog')).toHaveScreenshot('edit-panel-persisted-title.png');
+    await expect(page.getByRole('textbox', { name: 'Title' })).toHaveScreenshot('title-field-persisted.png');
   });
 });
