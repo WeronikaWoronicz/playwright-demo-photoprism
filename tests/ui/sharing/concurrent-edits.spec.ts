@@ -12,7 +12,7 @@ test.describe('Concurrent Edits', () => {
     browser,
   }) => {
     await uploadPage.navigateToUploadForm();
-    await uploadPage.uploadFiles(createPath('test-assets', 'concurrent-edits', 'photo-1.jpg'));
+    await uploadPage.uploadFiles(createPath('test-assets', 'concurrent-edits', 'concurrent-title-edit.jpg'));
     await uploadPage.waitForUploadComplete();
     await uploadPage.waitForPhotoInLibrary();
 
@@ -33,7 +33,7 @@ test.describe('Concurrent Edits', () => {
 
     const photoDetailPage1 = new PhotoDetailPage(page1);
     const photoDetailPage2 = new PhotoDetailPage(page2);
-    await Promise.all([photoDetailPage1.openEditPanel(), photoDetailPage2.openEditPanel()]);
+    await Promise.all([photoDetailPage1.openEditPanel(uid), photoDetailPage2.openEditPanel(uid)]);
 
     await photoDetailPage1.editTitle('Title From User 1');
     await Promise.all([
@@ -63,5 +63,9 @@ test.describe('Concurrent Edits', () => {
     });
     const updatedPhoto = (await resp.json()) as { UID: string; Title: string };
     expect(updatedPhoto.Title).toBe('Title From User 2');
+
+    await page.goto(BASE_URL + '/library/browse');
+    await page.locator(`.is-photo[data-uid="${uid}"]`).waitFor({ state: 'visible', timeout: 15000 });
+    await expect(page.locator(`.is-photo[data-uid="${uid}"]`)).toHaveScreenshot('photo-tile-last-write-wins.png');
   });
 });

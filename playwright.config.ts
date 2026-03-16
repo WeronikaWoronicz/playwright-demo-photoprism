@@ -10,6 +10,7 @@ const workers = process.env['CI'] ? 4 : 8;
 export default defineConfig({
   testDir: './tests',
   outputDir: './test-results',
+  snapshotPathTemplate: 'test-assets/snapshots/{projectName}/{testFilePath}/{arg}{ext}',
   reporter: [['html', { open: 'never', outputFolder: 'playwright-report' }], ['list']],
   use: {
     baseURL: process.env['BASE_URL'],
@@ -22,6 +23,10 @@ export default defineConfig({
   timeout: 120 * 1000,
   expect: {
     timeout: 10000,
+    toHaveScreenshot: {
+      threshold: 0.2,
+      maxDiffPixelRatio: 0.05,
+    },
   },
   retries: process.env['CI'] ? 2 : 0,
   fullyParallel: true,
@@ -30,10 +35,26 @@ export default defineConfig({
     {
       name: 'setup',
       testMatch: /admin\.setup\.ts/,
+      teardown: 'teardown',
+    },
+    {
+      name: 'cleanup',
+      testMatch: /cleanup\.setup\.ts/,
+      dependencies: ['setup'],
+      use: {
+        storageState: 'playwright/.auth/adminState.json',
+      },
+    },
+    {
+      name: 'teardown',
+      testMatch: /global\.teardown\.ts/,
+      use: {
+        storageState: 'playwright/.auth/adminState.json',
+      },
     },
     {
       name: 'chromium',
-      dependencies: ['setup'],
+      dependencies: ['setup', 'cleanup'],
       use: {
         browserName: 'chromium',
         storageState: 'playwright/.auth/adminState.json',
@@ -42,7 +63,7 @@ export default defineConfig({
     {
       name: 'user-setup',
       testMatch: /user\.setup\.ts/,
-      dependencies: ['setup'],
+      dependencies: ['setup', 'cleanup'],
     },
     {
       name: 'user-chromium',

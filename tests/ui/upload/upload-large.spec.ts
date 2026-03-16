@@ -10,13 +10,14 @@ test.describe('Upload network failure', () => {
   }) => {
     await page.route('**/api/v1/upload/**', (route) => route.abort('connectionfailed'));
 
-    const photoFile = createPath('test-assets', 'upload-large', 'photo-1.jpg');
+    const photoFile = createPath('test-assets', 'upload-large', 'large-network-abort.jpg');
     await uploadPage.navigateToUploadForm();
     await a11yCheck();
 
     await uploadPage.uploadFiles(photoFile).catch(() => {});
 
     await expect(page.getByRole('button', { name: /browse/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /browse/i })).toHaveScreenshot('upload-dialog-network-abort.png');
 
     await page.unroute('**/api/v1/upload/**');
 

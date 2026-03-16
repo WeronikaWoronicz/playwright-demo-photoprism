@@ -11,9 +11,9 @@ test.describe('Photo Metadata Edit', () => {
     page,
   }) => {
     await uploadPage.navigateToUploadForm();
-    await uploadPage.uploadFiles(createPath('test-assets', 'metadata-edit', 'photo-1.jpg'));
+    await uploadPage.uploadFiles(createPath('test-assets', 'metadata-edit', 'title-edit-target.jpg'));
     await uploadPage.waitForUploadComplete();
-    await uploadPage.waitForPhotoInLibrary();
+    await uploadPage.waitForPhotoInLibrary(1, 'title-edit-target.jpg');
 
     const uid = uploadPage.trackedUids[0];
     expect(uid).toBeTruthy();
@@ -30,5 +30,6 @@ test.describe('Photo Metadata Edit', () => {
     await photoDetailPage.openPhoto(uid);
     await photoDetailPage.openEditPanel();
     await expect(page.getByRole('textbox', { name: 'Title' })).toHaveValue(metadata.title);
+    await expect(page.locator('.p-photo-edit-dialog')).toHaveScreenshot('edit-panel-persisted-title.png');
   });
 });
