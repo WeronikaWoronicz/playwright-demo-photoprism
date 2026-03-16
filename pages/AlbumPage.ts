@@ -1,5 +1,6 @@
 import { type Page } from '@playwright/test';
 import { BASE_URL } from '../config.js';
+import { randomBytes } from 'crypto';
 
 const selectors = {
   albums: {
@@ -17,7 +18,16 @@ const selectors = {
 };
 
 export class AlbumPage {
-  constructor(readonly page: Page) {}
+  private _uniqueTag: string;
+  private _trackedAlbumUids: string[] = [];
+
+  constructor(readonly page: Page) {
+    this._uniqueTag = randomBytes(4).toString('hex');
+  }
+
+  uniqueName(base: string): string {
+    return `${base} ${this._uniqueTag}`;
+  }
 
   async navigateToAlbums() {
     await this.page.goto(BASE_URL + selectors.albums.path);
@@ -25,16 +35,13 @@ export class AlbumPage {
   }
 
   async clickAddAlbum() {
-    await this.page.locator(selectors.toolbar.addButton).waitFor({ state: 'visible', timeout: 15000 });
     await this.page.locator(selectors.toolbar.addButton).click();
     await this.page.locator(selectors.albums.card).first().waitFor({ state: 'visible', timeout: 10000 });
   }
 
   async typeAlbumName(name: string) {
     await this.page.locator(selectors.albums.titleButton).first().click();
-    const input = this.page.locator(selectors.editDialog.titleInput);
-    await input.waitFor({ timeout: 5000 });
-    await input.fill(name);
+    await this.page.locator(selectors.editDialog.titleInput).fill(name);
   }
 
   async confirmCreate() {
@@ -55,10 +62,6 @@ export class AlbumPage {
     return this.page.locator(selectors.albums.card).count();
   }
 
-  async openAlbum(name: string) {
-    await this.page.locator(selectors.albums.card, { hasText: name }).locator('.preview').first().click();
-  }
-
   async getAuthToken(): Promise<string> {
     const state = await this.page.context().storageState();
     const token = state.origins
@@ -74,7 +77,9 @@ export class AlbumPage {
       data: { Title: name },
     });
     const body = await resp.json();
-    return body.UID as string;
+    const uid = body.UID as string;
+    this._trackedAlbumUids.push(uid);
+    return uid;
   }
 
   async addPhotosToAlbumViaAPI(albumUid: string, photoUids: string[]): Promise<void> {
@@ -92,9 +97,16 @@ export class AlbumPage {
     return resp.json();
   }
 
-  async deleteAlbumViaAPI(albumUid: string): Promise<void> {
-    await this.page.request.delete(`${BASE_URL}/api/v1/albums/${albumUid}`, {
-      headers: { 'X-Auth-Token': await this.getAuthToken() },
-    });
+  async deleteTrackedAlbums(): Promise<void> {
+    const token = await this.getAuthToken().catch(() => null);
+    if (!token || this._trackedAlbumUids.length === 0) return;
+    for (const uid of this._trackedAlbumUids) {
+      await this.page.request
+        .delete(`${BASE_URL}/api/v1/albums/${uid}`, {
+          headers: { 'X-Auth-Token': token },
+        })
+        .catch(() => {});
+    }
+    this._trackedAlbumUids = [];
   }
 }

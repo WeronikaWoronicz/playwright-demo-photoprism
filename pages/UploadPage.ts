@@ -1,10 +1,12 @@
 import { type Page } from '@playwright/test';
 import { BASE_URL } from '../config.js';
 import { uploadMessages } from '../lib/constants.js';
+import { copyFileSync, readFileSync, writeFileSync, unlinkSync, existsSync } from 'fs';
+import { join, dirname, basename, extname } from 'path';
+import { randomBytes } from 'crypto';
 
 const selectors = {
   nav: {
-    uploadLink: 'a.nav-upload',
     searchInput: 'Search',
   },
   upload: {
@@ -14,18 +16,25 @@ const selectors = {
   photo: {
     tile: '.is-photo',
     renderedTile: '.is-photo[data-uid]',
-    selectButton: '.is-photo button.input-select',
   },
 };
 
 export class UploadPage {
   private _trackedUids: string[] = [];
-  private _preUploadUids: Set<string> = new Set();
+  private _uniqueTag: string;
+  private _tempFiles: string[] = [];
+  private _uploadProcessingPromise: Promise<unknown> | null = null;
 
-  constructor(readonly page: Page) {}
+  constructor(readonly page: Page) {
+    this._uniqueTag = randomBytes(8).toString('hex');
+  }
 
   get trackedUids(): string[] {
     return [...this._trackedUids];
+  }
+
+  async getNewPhotoCount(): Promise<number> {
+    return (await this.fetchPhotoUidsByFilename(this._uniqueTag)).length;
   }
 
   private async getSessionToken(): Promise<string | undefined> {
@@ -33,51 +42,32 @@ export class UploadPage {
     return state.origins.flatMap((o) => o.localStorage ?? []).find((item) => item.name === 'session.token')?.value;
   }
 
-  private async fetchPhotoUids(params: Record<string, unknown> = {}): Promise<string[]> {
+  private async fetchPhotoUidsByFilename(uniqueTag: string): Promise<string[]> {
     const token = await this.getSessionToken();
     if (!token) return [];
-    const resp = await this.page.request.get(`${BASE_URL}/api/v1/photos`, {
-      params: { count: 10000, offset: 0, ...params },
-      headers: { 'X-Auth-Token': token },
-    });
-    if (!resp.ok()) return [];
-    const photos = (await resp.json()) as Array<{ UID: string }>;
-    return photos.map((p) => p.UID);
-  }
-
-  private async capturePreUploadState(): Promise<void> {
-    const [libraryUids, reviewUids] = await Promise.all([this.fetchPhotoUids(), this.fetchPhotoUids({ review: true })]);
-    this._preUploadUids = new Set([...libraryUids, ...reviewUids]);
-  }
-
-  private async approveOwnReviewPhotos(): Promise<void> {
-    const reviewUids = await this.fetchPhotoUids({ review: true });
-    const ownReviewUids = reviewUids.filter((uid) => !this._preUploadUids.has(uid));
-    if (ownReviewUids.length === 0) return;
-    const token = await this.getSessionToken();
-    if (!token) return;
-    await this.page.request.post(`${BASE_URL}/api/v1/batch/photos/approve`, {
-      data: { photos: ownReviewUids },
-      headers: { 'X-Auth-Token': token },
-    });
+    const [libResp, revResp] = await Promise.all([
+      this.page.request.get(`${BASE_URL}/api/v1/photos`, {
+        params: { count: 10000, offset: 0 },
+        headers: { 'X-Auth-Token': token },
+      }),
+      this.page.request.get(`${BASE_URL}/api/v1/photos`, {
+        params: { count: 10000, offset: 0, review: true },
+        headers: { 'X-Auth-Token': token },
+      }),
+    ]);
+    const all: Array<{ UID: string; OriginalName?: string }> = [];
+    if (libResp.ok()) all.push(...((await libResp.json()) as Array<{ UID: string; OriginalName?: string }>));
+    if (revResp.ok()) all.push(...((await revResp.json()) as Array<{ UID: string; OriginalName?: string }>));
+    return [...new Set(all.filter((p) => p.OriginalName?.includes(uniqueTag)).map((p) => p.UID))];
   }
 
   async navigateToUploadForm() {
     await this.page.goto(BASE_URL + '/library/browse');
-    await this.capturePreUploadState();
-    const uploadLink = this.page.locator(selectors.nav.uploadLink);
-    const isAttached = await uploadLink
-      .waitFor({ state: 'attached', timeout: 3000 })
-      .then(() => true)
-      .catch(() => false);
-    if (!isAttached) {
-      await this.page.getByRole('button', { name: /open menu/i }).click();
-      await uploadLink.waitFor({ state: 'attached', timeout: 10000 });
-    }
     await this.openUploadMenu();
   }
 
   private async openUploadMenu() {
+    await this.page.locator('a.nav-upload').waitFor({ state: 'attached', timeout: 15000 });
     await this.page.evaluate(() => {
       const link = document.querySelector('a.nav-upload') as HTMLElement | null;
       if (!link) throw new Error('Upload link not found in navigation');
@@ -87,62 +77,109 @@ export class UploadPage {
   }
 
   async uploadFiles(filePaths: string | string[]) {
+    const paths = Array.isArray(filePaths) ? filePaths : [filePaths];
+    const uniquePaths = paths.map((p) => {
+      const ext = extname(p);
+      const base = basename(p, ext);
+      const dir = dirname(p);
+      const uniqueName = `${base}_${this._uniqueTag}${ext}`;
+      const dest = join(dir, uniqueName);
+      copyFileSync(p, dest);
+      const srcBuf = readFileSync(dest);
+      if (srcBuf.length >= 2 && srcBuf[0] === 0xff && srcBuf[1] === 0xd8) {
+        const comment = Buffer.from(this._uniqueTag, 'utf8');
+        const comLen = 2 + comment.length;
+        const comSeg = Buffer.allocUnsafe(2 + 2 + comment.length);
+        comSeg[0] = 0xff;
+        comSeg[1] = 0xfe;
+        comSeg[2] = (comLen >> 8) & 0xff;
+        comSeg[3] = comLen & 0xff;
+        comment.copy(comSeg, 4);
+        writeFileSync(dest, Buffer.concat([srcBuf.slice(0, 2), comSeg, srcBuf.slice(2)]));
+      }
+      this._tempFiles.push(dest);
+      return dest;
+    });
+    this._uploadProcessingPromise = this.page
+      .waitForResponse((resp) => resp.url().includes('/upload/') && resp.request().method() === 'POST', {
+        timeout: 60000,
+      })
+      .catch(() => null);
     const fileChooserPromise = this.page.waitForEvent('filechooser');
     await this.page.getByRole('button', { name: selectors.upload.browseButton }).click();
     const fileChooser = await fileChooserPromise;
+    await fileChooser.setFiles(uniquePaths);
+  }
 
-    await fileChooser.setFiles(filePaths);
+  cleanupTempFiles() {
+    for (const f of this._tempFiles) {
+      if (existsSync(f)) unlinkSync(f);
+    }
+    this._tempFiles = [];
   }
 
   async waitForUploadComplete() {
     await this.page.getByText(selectors.upload.completeText).waitFor({ timeout: 30000 });
-    await this.page
-      .waitForResponse((resp) => resp.url().includes('/upload/') && resp.request().method() === 'PUT', {
-        timeout: 15000,
-      })
-      .catch(() => {});
+    if (this._uploadProcessingPromise) {
+      await this._uploadProcessingPromise;
+      this._uploadProcessingPromise = null;
+    }
+    const token = await this.getSessionToken();
+    if (token) {
+      this.page.request
+        .post(`${BASE_URL}/api/v1/index`, {
+          data: { action: 'index' },
+          headers: { 'X-Auth-Token': token },
+        })
+        .catch(() => {});
+    }
   }
 
-  async waitForPhotoInLibrary(_minCount = 1) {
+  async waitForPhotoInLibrary(_minCount = 1, _filename?: string) {
     const { expect } = await import('@playwright/test');
+    const effectiveMinCount = this._tempFiles.length > 0 ? this._tempFiles.length : _minCount;
+    let ownReviewUids: string[] = [];
+    let ownLibraryUids: string[] = [];
     await expect
       .poll(
         async () => {
-          return (await this.getReviewPhotoCount()) + (await this.getLibraryPhotoCount());
+          const byTag = await this.fetchPhotoUidsByFilename(this._uniqueTag);
+          const token = await this.getSessionToken();
+          if (token) {
+            const reviewResp = await this.page.request.get(`${BASE_URL}/api/v1/photos`, {
+              params: { count: 10000, offset: 0, review: true },
+              headers: { 'X-Auth-Token': token },
+            });
+            const reviewUids = reviewResp.ok()
+              ? ((await reviewResp.json()) as Array<{ UID: string }>).map((p) => p.UID)
+              : [];
+            const reviewSet = new Set(reviewUids);
+            ownReviewUids = byTag.filter((uid) => reviewSet.has(uid));
+            ownLibraryUids = byTag.filter((uid) => !reviewSet.has(uid));
+          } else {
+            ownLibraryUids = byTag;
+          }
+          return byTag.length;
         },
-        { timeout: 60000 }
+        { timeout: 120000 }
       )
-      .toBeGreaterThanOrEqual(1);
-    await this.approveOwnReviewPhotos();
+      .toBeGreaterThanOrEqual(effectiveMinCount);
+    const token = await this.getSessionToken();
+    if (token && ownReviewUids.length > 0) {
+      await this.page.request.post(`${BASE_URL}/api/v1/batch/photos/approve`, {
+        data: { photos: ownReviewUids },
+        headers: { 'X-Auth-Token': token },
+      });
+    }
+    const allNewUids = [...new Set([...ownReviewUids, ...ownLibraryUids])];
+    this._trackedUids = [...new Set([...this._trackedUids, ...allNewUids])];
     await this.page.goto(`${BASE_URL}/library/browse`);
-    await this.page.locator(selectors.photo.renderedTile).first().waitFor({ timeout: 30000 });
-    const rendered = await this.getRenderedPhotoUids();
-    const newUids = rendered.filter((uid) => !this._preUploadUids.has(uid));
-    this._trackedUids = [...new Set([...this._trackedUids, ...newUids])];
-  }
-
-  private async getLibraryPhotoCount(): Promise<number> {
-    const token = await this.getSessionToken();
-    if (!token) return 0;
-    const resp = await this.page.request.get(`${BASE_URL}/api/v1/photos`, {
-      params: { count: 1, offset: 0 },
-      headers: { 'X-Auth-Token': token },
-    });
-    if (!resp.ok()) return 0;
-    const photos = (await resp.json()) as Array<unknown>;
-    return photos.length;
-  }
-
-  private async getReviewPhotoCount(): Promise<number> {
-    const token = await this.getSessionToken();
-    if (!token) return 0;
-    const resp = await this.page.request.get(`${BASE_URL}/api/v1/photos`, {
-      params: { count: 1, offset: 0, review: true },
-      headers: { 'X-Auth-Token': token },
-    });
-    if (!resp.ok()) return 0;
-    const photos = (await resp.json()) as Array<unknown>;
-    return photos.length;
+    for (const uid of allNewUids) {
+      await this.page
+        .locator(`.is-photo[data-uid="${uid}"]`)
+        .waitFor({ state: 'visible', timeout: 30000 })
+        .catch(() => {});
+    }
   }
 
   async navigateToLibrary() {

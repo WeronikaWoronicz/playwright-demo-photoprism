@@ -33,6 +33,7 @@ export const test = base.extend<Pages>({
     const uploadPageObj = new UploadPage(page);
     await use(uploadPageObj);
     await deletePhotosByUids(context, uploadPageObj.trackedUids);
+    uploadPageObj.cleanupTempFiles();
   },
   libraryPage: async ({ page }, use) => {
     await use(new LibraryPage(page));
@@ -52,7 +53,9 @@ export const test = base.extend<Pages>({
   },
   albumPage: async ({ page, context }, use) => {
     await deleteAllAlbums(context);
-    await use(new AlbumPage(page));
+    const albumPageObj = new AlbumPage(page);
+    await use(albumPageObj);
+    await albumPageObj.deleteTrackedAlbums();
     await deleteAllAlbums(context);
   },
   a11yCheck: async ({ page }, use) => {
@@ -65,7 +68,7 @@ export const test = base.extend<Pages>({
   },
   uploadedPhoto: [
     async ({ uploadPage }, use) => {
-      const photoPath = createPath('test-assets', 'photo-1.jpg');
+      const photoPath = createPath('test-assets', 'fixture-photo.jpg');
       await uploadPage.navigateToUploadForm();
       await uploadPage.uploadFiles(photoPath);
       await uploadPage.waitForUploadComplete();

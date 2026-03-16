@@ -4,54 +4,55 @@ const selectors = {
   photo: {
     editTitleButton: '.action-title-edit',
     titleInput: 'Title',
-    descriptionInput: 'Caption',
-    tagInput: 'Keywords',
-    saveButton: 'Save',
-    archiveButton: 'Archive',
-    rotateButton: 'Rotate',
   },
 };
 
 export class PhotoDetailPage {
+  private _lastOpenedUid: string | null = null;
+
   constructor(readonly page: Page) {}
 
   async openPhoto(uid: string) {
+    this._lastOpenedUid = uid;
     await this.page.locator(`.is-photo[data-uid="${uid}"]`).click();
   }
 
-  async openEditPanel() {
-    await this.page.locator('.meta-filename').waitFor({ state: 'visible', timeout: 15000 });
-    await this.page.locator(selectors.photo.editTitleButton).evaluate((el: HTMLElement) => el.click());
+  async openEditPanel(uid?: string) {
+    const effectiveUid = uid ?? this._lastOpenedUid;
+    if (!effectiveUid) throw new Error('openEditPanel requires a uid or a prior openPhoto() call');
+    await this.page.locator(`.is-photo[data-uid="${effectiveUid}"]`).waitFor({ state: 'visible', timeout: 15000 });
+    await this.page.evaluate((targetUid: string) => {
+      const tile = document.querySelector(`.is-photo[data-uid="${targetUid}"]`);
+      const editBtn = tile?.querySelector('.action-title-edit') as HTMLElement | null;
+      if (!editBtn) throw new Error(`Edit button for photo ${targetUid} not found`);
+      editBtn.click();
+    }, effectiveUid);
     await this.page.getByRole('tab', { name: /details/i }).waitFor({ timeout: 15000 });
   }
 
   async editTitle(title: string) {
     const input = this.page.getByRole('textbox', { name: selectors.photo.titleInput });
-    await input.click({ clickCount: 3 });
-    await input.pressSequentially(title);
-  }
-
-  async editDescription(desc: string) {
-    const input = this.page.getByRole('textbox', { name: selectors.photo.descriptionInput });
-    await input.click({ clickCount: 3 });
-    await input.pressSequentially(desc);
-  }
-
-  async addTag(tag: string) {
-    await this.page.getByRole('textbox', { name: selectors.photo.tagInput }).fill(tag);
-    await this.page.keyboard.press('Enter');
+    await input.focus();
+    await this.page.keyboard.press('Control+a');
+    await input.pressSequentially(title, { delay: 50 });
+    await this.page.keyboard.press('Tab');
+    await expect(input).toHaveValue(title);
   }
 
   async saveChanges() {
     const btn = this.page.getByRole('button', { name: /save/i });
     await expect(btn).toBeEnabled({ timeout: 15000 });
-    await btn.click();
+    await Promise.all([
+      this.page.waitForResponse((resp) => resp.url().includes('/api/v1/photos/') && resp.request().method() === 'PUT', {
+        timeout: 15000,
+      }),
+      btn.click(),
+    ]);
   }
 
   async archiveSelectedPhoto() {
-    await this.page.locator('.clipboard-container .action-menu').waitFor({ timeout: 10000 });
     await this.page.locator('.clipboard-container .action-menu').click();
-    await this.page.locator('#t-clipboard .action-archive').click();
+    await this.page.locator('.clipboard-container .action-archive').click();
   }
 
   async rotatePhoto() {
