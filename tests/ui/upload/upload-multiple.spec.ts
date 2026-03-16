@@ -18,6 +18,10 @@ test.describe('Multiple photo upload', () => {
     const uids = await uploadPage.getRenderedPhotoUids();
     expect(uids.length).toBeGreaterThanOrEqual(3);
 
-    await expect(page.locator('.is-photo').first()).toHaveScreenshot('uploaded-multiple-first-tile.png');
+    const trackedUid = uploadPage.trackedUids[0];
+    const tileBox = await page.locator(`.is-photo[data-uid="${trackedUid}"]`).boundingBox();
+    await expect(page).toHaveScreenshot('uploaded-multiple-first-tile.png', {
+      clip: { x: tileBox!.x, y: tileBox!.y, width: 300, height: 388 },
+    });
   });
 });

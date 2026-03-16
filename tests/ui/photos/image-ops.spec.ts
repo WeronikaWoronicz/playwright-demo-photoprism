@@ -31,7 +31,11 @@ test.describe('Photo Image Operations', () => {
     await saveResponsePromise;
 
     await page.goto(BASE_URL + '/library/browse');
-    await page.locator(`.is-photo[data-uid="${uid}"]`).waitFor({ state: 'visible', timeout: 15000 });
-    await expect(page.locator(`.is-photo[data-uid="${uid}"]`)).toHaveScreenshot('photo-tile-after-rotation.png');
+    const tile = page.locator(`.is-photo[data-uid="${uid}"]`);
+    await tile.waitFor({ state: 'visible', timeout: 15000 });
+    const box = await tile.boundingBox();
+    await expect(page).toHaveScreenshot('photo-tile-after-rotation.png', {
+      clip: { x: box!.x, y: box!.y, width: 300, height: 388 },
+    });
   });
 });

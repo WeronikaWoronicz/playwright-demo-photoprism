@@ -5,7 +5,7 @@ dotenv.config({
   path: `env/${process.env['NODE_ENV'] ? `${process.env['NODE_ENV']}.env` : `local.env`}`,
 });
 
-const workers = process.env['CI'] ? 4 : 8;
+const workers = process.env['CI'] ? 2 : 8;
 
 export default defineConfig({
   testDir: './tests',

@@ -20,8 +20,11 @@ test.describe('Single photo upload', () => {
     const uids = await uploadPage.getRenderedPhotoUids();
     expect(uids.length).toBeGreaterThanOrEqual(1);
 
-    const firstUid = uids[0];
-    await expect(page.locator(`.is-photo[data-uid="${firstUid}"]`)).toHaveScreenshot('uploaded-single-photo-tile.png');
+    const trackedUid = uploadPage.trackedUids[0];
+    const tileBox = await page.locator(`.is-photo[data-uid="${trackedUid}"]`).boundingBox();
+    await expect(page).toHaveScreenshot('uploaded-single-photo-tile.png', {
+      clip: { x: tileBox!.x, y: tileBox!.y, width: 300, height: 388 },
+    });
 
     expect(pageErrors).toHaveLength(0);
   });

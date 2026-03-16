@@ -47,11 +47,11 @@ export class UploadPage {
     if (!token) return [];
     const [libResp, revResp] = await Promise.all([
       this.page.request.get(`${BASE_URL}/api/v1/photos`, {
-        params: { count: 10000, offset: 0 },
+        params: { count: 100, offset: 0 },
         headers: { 'X-Auth-Token': token },
       }),
       this.page.request.get(`${BASE_URL}/api/v1/photos`, {
-        params: { count: 10000, offset: 0, review: true },
+        params: { count: 100, offset: 0, review: true },
         headers: { 'X-Auth-Token': token },
       }),
     ]);

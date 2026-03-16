@@ -65,7 +65,11 @@ test.describe('Concurrent Edits', () => {
     expect(updatedPhoto.Title).toBe('Title From User 2');
 
     await page.goto(BASE_URL + '/library/browse');
-    await page.locator(`.is-photo[data-uid="${uid}"]`).waitFor({ state: 'visible', timeout: 15000 });
-    await expect(page.locator(`.is-photo[data-uid="${uid}"]`)).toHaveScreenshot('photo-tile-last-write-wins.png');
+    const tile = page.locator(`.is-photo[data-uid="${uid}"]`);
+    await tile.waitFor({ state: 'visible', timeout: 15000 });
+    const box = await tile.boundingBox();
+    await expect(page).toHaveScreenshot('photo-tile-last-write-wins.png', {
+      clip: { x: box!.x, y: box!.y, width: 300, height: 388 },
+    });
   });
 });

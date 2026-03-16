@@ -32,8 +32,7 @@ export class PhotoDetailPage {
 
   async editTitle(title: string) {
     const input = this.page.getByRole('textbox', { name: selectors.photo.titleInput });
-    await input.focus();
-    await this.page.keyboard.press('Control+a');
+    await input.click({ clickCount: 3 });
     await input.pressSequentially(title, { delay: 50 });
     await this.page.keyboard.press('Tab');
     await expect(input).toHaveValue(title);
