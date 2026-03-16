@@ -6,20 +6,22 @@ test.describe.serial('Album CRUD', () => {
   test.use({ storageState: 'playwright/.auth/adminState.json' });
 
   test('TC-ALB-001 User can create an album through UI @P0', async ({ albumPage, page }) => {
+    const albumName = albumPage.uniqueName('E2E Test Album');
     await albumPage.navigateToAlbums();
     await albumPage.clickAddAlbum();
-    await albumPage.typeAlbumName('E2E Test Album');
+    await albumPage.typeAlbumName(albumName);
     await albumPage.confirmCreate();
 
     const titles = await albumPage.getAlbumTitles();
-    expect(titles.map((t) => t.trim())).toContain('E2E Test Album');
+    expect(titles.map((t) => t.trim())).toContain(albumName);
     await expect(page).toHaveURL(/albums/);
   });
 
   test('TC-ALB-002 User sees created album on albums page @P0', async ({ albumPage, page }) => {
+    const albumName = albumPage.uniqueName('E2E Test Album');
     await albumPage.navigateToAlbums();
     await albumPage.clickAddAlbum();
-    await albumPage.typeAlbumName('E2E Test Album');
+    await albumPage.typeAlbumName(albumName);
     await albumPage.confirmCreate();
 
     await albumPage.navigateToAlbums();
@@ -28,15 +30,16 @@ test.describe.serial('Album CRUD', () => {
     const count = await albumPage.getAlbumCount();
     expect(count).toBeGreaterThanOrEqual(1);
 
-    const visible = await albumPage.isAlbumVisible('E2E Test Album');
+    const visible = await albumPage.isAlbumVisible(albumName);
     expect(visible).toBe(true);
   });
 
   test('TC-ALB-003 User can add photos to an album @P0', async ({ uploadPage, albumPage, libraryPage }) => {
-    const albumUid = await albumPage.createAlbumViaAPI('E2E Test Album');
+    const albumName = albumPage.uniqueName('E2E Test Album');
+    const albumUid = await albumPage.createAlbumViaAPI(albumName);
 
     await uploadPage.navigateToUploadForm();
-    await uploadPage.uploadFiles(createPath('test-assets', 'album-crud', 'photo-1.jpg'));
+    await uploadPage.uploadFiles(createPath('test-assets', 'album-crud', 'album-add-photo.jpg'));
     await uploadPage.waitForUploadComplete();
     await uploadPage.waitForPhotoInLibrary();
 

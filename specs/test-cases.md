@@ -548,7 +548,7 @@
 2. Navigate to library browse.
 3. Search for `'photo'` (partial filename match) via `searchPage.search(...)`.
 4. Wait for results via `searchPage.waitForResults()`.
-5. Assert `searchPage.getResultCount()` >= 1.
+5. Find exactly uploaded photo
 
 **Expected Result:** Search returns the uploaded photo.
 

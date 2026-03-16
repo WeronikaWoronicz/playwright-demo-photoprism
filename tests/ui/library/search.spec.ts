@@ -13,7 +13,7 @@ test.describe('Library Search', () => {
 
   test('TC-LIB-005 User can find uploaded photo via search @P0', async ({ uploadPage, searchPage, page }) => {
     await uploadPage.navigateToUploadForm();
-    await uploadPage.uploadFiles(createPath('test-assets', 'search', 'photo-1.jpg'));
+    await uploadPage.uploadFiles(createPath('test-assets', 'search', 'search-target.jpg'));
     await uploadPage.waitForUploadComplete();
     await uploadPage.waitForPhotoInLibrary();
 
@@ -21,7 +21,7 @@ test.describe('Library Search', () => {
     await expect
       .poll(
         async () => {
-          await searchPage.search('photo');
+          await searchPage.search('search');
           await page.waitForTimeout(500);
           return searchPage.getResultCount();
         },

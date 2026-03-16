@@ -21,9 +21,9 @@ test.describe('Public Share Link', () => {
     browser,
   }) => {
     await uploadPage.navigateToUploadForm();
-    await uploadPage.uploadFiles(createPath('test-assets', 'share-link', 'photo-1.jpg'));
+    await uploadPage.uploadFiles(createPath('test-assets', 'share-link', 'share-link-photo.jpg'));
     await uploadPage.waitForUploadComplete();
-    await uploadPage.waitForPhotoInLibrary();
+    await uploadPage.waitForPhotoInLibrary(1, 'share-link-photo.jpg');
 
     const photoUid = uploadPage.trackedUids[0];
     expect(photoUid).toBeTruthy();

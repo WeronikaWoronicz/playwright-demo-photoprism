@@ -5,7 +5,7 @@ import { createPath } from '../../../lib/assets.js';
 test.describe('Photo Delete', () => {
   test('TC-PHO-003 User can delete a photo @P1', async ({ uploadPage, libraryPage, photoDetailPage }) => {
     await uploadPage.navigateToUploadForm();
-    await uploadPage.uploadFiles(createPath('test-assets', 'delete-undo', 'photo-1.jpg'));
+    await uploadPage.uploadFiles(createPath('test-assets', 'delete-undo', 'delete-target.jpg'));
     await uploadPage.waitForUploadComplete();
     await uploadPage.waitForPhotoInLibrary();
 
