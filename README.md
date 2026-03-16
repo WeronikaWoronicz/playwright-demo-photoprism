@@ -37,13 +37,25 @@ The app will be available at `http://127.0.0.1:2342`.
 
 ## Environment setup
 
-Copy the example env file and adjust if needed:
+The test suite reads environment variables from `env/local.env` (loaded automatically by `playwright.config.ts` via `dotenv`).
+
+To set up your environment, copy the template and fill in your credentials:
 
 ```bash
-cp env/local.env env/local.env
+cp env/example_local.env env/local.env
 ```
 
-Required variables: `BASE_URL`, `PHOTOPRISM_USERNAME`, `PHOTOPRISM_PASSWORD`.
+Then edit `env/local.env` with your actual values:
+
+| Variable              | Description                                                |
+| --------------------- | ---------------------------------------------------------- |
+| `BASE_URL`            | PhotoPrism instance URL (default: `http://127.0.0.1:2342`) |
+| `PHOTOPRISM_USERNAME` | Admin username configured in your PhotoPrism instance      |
+| `PHOTOPRISM_PASSWORD` | Admin password configured in your PhotoPrism instance      |
+
+Default credentials for a local PhotoPrism instance can be found in the [PhotoPrism configuration documentation](https://docs.photoprism.app/getting-started/config-options/#authentication).
+
+> **Note:** `env/local.env` is gitignored and will not be committed. Only `env/example_local.env` is tracked.
 
 ## Install dependencies
 
@@ -71,6 +83,22 @@ Run headed:
 ```bash
 pnpm exec playwright test --headed
 ```
+
+## Updating snapshots
+
+Some tests use visual comparison (`toHaveScreenshot`). When the UI changes intentionally, update the baseline snapshots:
+
+```bash
+pnpm exec playwright test --update-snapshots
+```
+
+To update snapshots for a specific test file:
+
+```bash
+pnpm exec playwright test tests/ui/photos/image-ops.spec.ts --update-snapshots
+```
+
+Review the updated `.png` files in your diff before committing to make sure only expected changes are included.
 
 ## Code linting and formatting
 
