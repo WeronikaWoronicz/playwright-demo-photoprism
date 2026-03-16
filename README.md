@@ -84,6 +84,22 @@ Run headed:
 pnpm exec playwright test --headed
 ```
 
+## Updating snapshots
+
+Some tests use visual comparison (`toHaveScreenshot`). When the UI changes intentionally, update the baseline snapshots:
+
+```bash
+pnpm exec playwright test --update-snapshots
+```
+
+To update snapshots for a specific test file:
+
+```bash
+pnpm exec playwright test tests/ui/photos/image-ops.spec.ts --update-snapshots
+```
+
+Review the updated `.png` files in your diff before committing to make sure only expected changes are included.
+
 ## Code linting and formatting
 
 Format and lint:
