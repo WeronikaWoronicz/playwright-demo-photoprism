@@ -26,10 +26,10 @@ test.describe('Public Share Link', () => {
     await uploadPage.waitForPhotoInLibrary(1, 'share-link-photo.jpg');
 
     const photoUid = uploadPage.trackedUids[0];
-    expect(photoUid).toBeTruthy();
+    expect(photoUid).toMatch(/^[a-z0-9]+$/);
 
     const token = await sharePage.createShareLink(photoUid, page.request);
-    expect(token).toBeTruthy();
+    expect(token).toMatch(/^[a-z0-9]+$/);
 
     const unauthCtx = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const unauthPage = await unauthCtx.newPage();

@@ -16,7 +16,7 @@ test.describe('Photo Metadata Edit', () => {
     await uploadPage.waitForPhotoInLibrary(1, 'title-edit-target.jpg');
 
     const uid = uploadPage.trackedUids[0];
-    expect(uid).toBeTruthy();
+    expect(uid).toMatch(/^[a-z0-9]+$/);
 
     await photoDetailPage.openPhoto(uid);
     await photoDetailPage.openEditPanel();

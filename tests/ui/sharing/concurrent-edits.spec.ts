@@ -19,7 +19,7 @@ test.describe('Concurrent Edits', () => {
     await uploadPage.waitForPhotoInLibrary();
 
     const uid = uploadPage.trackedUids[0];
-    expect(uid).toBeTruthy();
+    expect(uid).toMatch(/^[a-z0-9]+$/);
 
     const workerIdx = parseInt(process.env['TEST_PARALLEL_INDEX'] ?? '0', 10);
     const [context1, context2] = await Promise.all([
