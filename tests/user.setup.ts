@@ -29,6 +29,13 @@ setup('create user and authenticate', async ({ browser }) => {
       await loginViaAPI(username, password, userContext, baseUrl);
       const userPage = await userContext.newPage();
       await userPage.goto(baseUrl);
+      const token = await userPage.evaluate(() => localStorage.getItem('session.token'));
+      if (!token || token === 'undefined' || token === 'null') {
+        throw new Error(
+          `User "${username}" login failed on ${baseUrl}. Create the user first:\n` +
+            `  docker compose -f sut/compose.yml exec photoprism photoprism users add -r user -p "${password}" "${username}"`
+        );
+      }
       await userContext.storageState({ path: getUserAuthPath(i) });
     } finally {
       await userContext.close();
