@@ -4,6 +4,7 @@ import { uploadMessages } from '../lib/constants.js';
 import { copyFileSync, readFileSync, writeFileSync, unlinkSync, existsSync } from 'fs';
 import { join, dirname, basename, extname } from 'path';
 import { randomBytes } from 'crypto';
+import { getSessionToken } from '../lib/auth.js';
 
 const selectors = {
   nav: {
@@ -37,14 +38,13 @@ export class UploadPage {
     return (await this.fetchPhotoUidsByFilename(this._uniqueTag)).length;
   }
 
-  private async getSessionToken(): Promise<string | undefined> {
-    const state = await this.page.context().storageState();
-    return state.origins.flatMap((o) => o.localStorage ?? []).find((item) => item.name === 'session.token')?.value;
-  }
-
   private async fetchPhotoUidsByFilename(uniqueTag: string): Promise<string[]> {
-    const token = await this.getSessionToken();
-    if (!token) return [];
+    let token: string | undefined;
+    try {
+      token = await getSessionToken(this.page);
+    } catch {
+      return [];
+    }
     const [libResp, revResp] = await Promise.all([
       this.page.request.get(`${BASE_URL}/api/v1/photos`, {
         params: { count: 100, offset: 0 },
@@ -127,7 +127,12 @@ export class UploadPage {
       await this._uploadProcessingPromise;
       this._uploadProcessingPromise = null;
     }
-    const token = await this.getSessionToken();
+    let token: string | undefined;
+    try {
+      token = await getSessionToken(this.page);
+    } catch {
+      // Token not available, skip index trigger
+    }
     if (token) {
       this.page.request
         .post(`${BASE_URL}/api/v1/index`, {
@@ -149,7 +154,12 @@ export class UploadPage {
       .poll(
         async () => {
           const byTag = await this.fetchPhotoUidsByFilename(this._uniqueTag);
-          const token = await this.getSessionToken();
+          let token: string | undefined;
+          try {
+            token = await getSessionToken(this.page);
+          } catch {
+            // Token not available
+          }
           if (token) {
             const reviewResp = await this.page.request.get(`${BASE_URL}/api/v1/photos`, {
               params: { count: 10000, offset: 0, review: true },
@@ -169,7 +179,12 @@ export class UploadPage {
         { timeout: 120000 }
       )
       .toBeGreaterThanOrEqual(effectiveMinCount);
-    const token = await this.getSessionToken();
+    let token: string | undefined;
+    try {
+      token = await getSessionToken(this.page);
+    } catch {
+      // Token not available
+    }
     if (token && ownReviewUids.length > 0) {
       await this.page.request.post(`${BASE_URL}/api/v1/batch/photos/approve`, {
         data: { photos: ownReviewUids },
