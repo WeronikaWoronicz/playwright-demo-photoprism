@@ -23,20 +23,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build patched PhotoPrism image
         run: docker build -f sut/photoprism.Dockerfile -t photoprism-patched .
-      - name: Start PhotoPrism
-        run: docker run -d --name photoprism -p 2342:2342 -e PHOTOPRISM_DATABASE_DRIVER=sqlite -e PHOTOPRISM_ADMIN_USER=${{ secrets.PHOTOPRISM_USERNAME }} -e PHOTOPRISM_ADMIN_PASSWORD=${{ secrets.PHOTOPRISM_PASSWORD }} photoprism-patched
-      - name: Wait for PhotoPrism to be ready
-        run: |
-          for i in {1..30}; do
-            if curl -f http://localhost:2342/api/v1/status > /dev/null 2>&1; then
-              echo 'PhotoPrism is ready'
-              exit 0
-            fi
-            echo "Attempt $i/30: PhotoPrism not ready yet, waiting..."
-            sleep 10
-          done
-          echo 'PhotoPrism failed to start'
-          exit 1
 
       - uses: pnpm/action-setup@v4
         with:
@@ -67,7 +53,10 @@ jobs:
       - name: Run Playwright tests
         run: pnpm exec playwright test
         env:
-          BASE_URL: http://localhost:2342
+          PLAYWRIGHT_DOCKER_WORKERS: 'true'
+          WORKER_COUNT: '4'
+          PHOTOPRISM_ADMIN_USER: ${{ secrets.PHOTOPRISM_USERNAME }}
+          PHOTOPRISM_ADMIN_PASSWORD: ${{ secrets.PHOTOPRISM_PASSWORD }}
           PHOTOPRISM_USERNAME: ${{ secrets.PHOTOPRISM_USERNAME }}
           PHOTOPRISM_PASSWORD: ${{ secrets.PHOTOPRISM_PASSWORD }}
 
