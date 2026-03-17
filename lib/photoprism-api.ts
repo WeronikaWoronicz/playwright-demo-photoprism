@@ -87,7 +87,9 @@ export async function triggerIndex(page: Page): Promise<void> {
       data: { action: 'index' },
       headers: { 'X-Auth-Token': token },
     })
-    .catch(() => {});
+    .catch(() => {
+      console.warn('photoprism-api: index trigger failed');
+    });
 }
 
 export async function deleteAllPhotos(context: BrowserContext) {
