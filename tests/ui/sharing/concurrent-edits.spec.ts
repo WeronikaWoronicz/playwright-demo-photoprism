@@ -58,7 +58,7 @@ test.describe('Concurrent Edits', () => {
     const state = await page.context().storageState();
     const token = state.origins
       .flatMap((o) => o.localStorage ?? [])
-      .find((item) => item.name === 'session.token')?.value;
+      .find((item) => item.name.endsWith('session.token'))?.value;
     const resp = await page.request.get(`${BASE_URL}/api/v1/photos/${uid}`, {
       headers: { 'X-Auth-Token': token ?? '' },
     });

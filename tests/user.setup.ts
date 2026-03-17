@@ -1,26 +1,15 @@
 import { test as setup } from '@playwright/test';
-import { photoprism } from '../config.js';
+import { photoprism, getWorkerBaseUrl } from '../config.js';
 import { loginViaAPI } from '../lib/auth.js';
 import { getUserAuthPath } from '../lib/auth-paths.js';
-import { readFileSync, existsSync, mkdirSync } from 'fs';
-import { join } from 'path';
+import { mkdirSync } from 'fs';
 
 const username = process.env['PHOTOPRISM_USER_USERNAME'] || 'testuser';
 const password = process.env['PHOTOPRISM_USER_PASSWORD'] || 'testuser123!';
 
-function getWorkerBaseUrl(workerIndex: number): string {
-  const portMapPath = join(process.cwd(), '.worker-ports.json');
-  if (existsSync(portMapPath)) {
-    const portMap = JSON.parse(readFileSync(portMapPath, 'utf-8')) as Record<string, number>;
-    const port = portMap[String(workerIndex)];
-    if (port) return `http://127.0.0.1:${port}`;
-  }
-  return process.env['BASE_URL'] ?? 'http://127.0.0.1:2342';
-}
-
 setup('create user and authenticate', async ({ browser }) => {
   mkdirSync('playwright/.auth', { recursive: true });
-  const workerCount = parseInt(process.env['WORKER_COUNT'] ?? '1', 10);
+  const workerCount = parseInt(process.env['WORKER_COUNT'] ?? '4', 10);
   for (let i = 0; i < workerCount; i++) {
     const baseUrl = getWorkerBaseUrl(i);
     const adminContext = await browser.newContext();

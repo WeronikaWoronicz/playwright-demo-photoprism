@@ -6,15 +6,30 @@ const get_from_env_or_throw = (name: string) => {
   throw new Error(`Missing required config env variable: ${name}`);
 };
 
-function resolveBaseUrl(): string {
+function readPortMap(): Record<string, number> | null {
   const portMapPath = join(process.cwd(), '.worker-ports.json');
-  if (existsSync(portMapPath)) {
-    try {
-      const portMap = JSON.parse(readFileSync(portMapPath, 'utf-8')) as Record<string, number>;
-      const workerIndex = process.env['TEST_WORKER_INDEX'] ?? '0';
-      const port = portMap[workerIndex];
-      if (port) return `http://127.0.0.1:${port}`;
-    } catch {}
+  if (!existsSync(portMapPath)) return null;
+  try {
+    return JSON.parse(readFileSync(portMapPath, 'utf-8')) as Record<string, number>;
+  } catch {
+    return null;
+  }
+}
+
+export function getWorkerBaseUrl(workerIndex: number): string {
+  const portMap = readPortMap();
+  if (portMap) {
+    const port = portMap[String(workerIndex)];
+    if (port) return `http://127.0.0.1:${port}`;
+  }
+  return process.env['BASE_URL'] ?? 'http://127.0.0.1:2342';
+}
+
+function resolveBaseUrl(): string {
+  const portMap = readPortMap();
+  if (portMap) {
+    const port = portMap[process.env['TEST_WORKER_INDEX'] ?? '0'];
+    if (port) return `http://127.0.0.1:${port}`;
   }
   return get_from_env_or_throw('BASE_URL');
 }
