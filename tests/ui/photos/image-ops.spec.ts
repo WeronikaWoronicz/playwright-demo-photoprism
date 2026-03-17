@@ -31,7 +31,7 @@ test.describe('Photo Image Operations', () => {
     await saveResponsePromise;
 
     await page.goto(BASE_URL + '/library/browse');
-    const tile = page.locator(`.is-photo[data-uid="${uid}"]`);
+    const tile = libraryPage.getPhotoTile(uid);
     await tile.waitFor({ state: 'visible', timeout: 15000 });
     const box = await tile.boundingBox();
     await expect(page).toHaveScreenshot('photo-tile-after-rotation.png', {

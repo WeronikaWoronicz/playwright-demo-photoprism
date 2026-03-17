@@ -7,6 +7,7 @@ test.describe('Single photo upload', () => {
     uploadPage,
     pageErrors,
     page,
+    libraryPage,
   }) => {
     const file = createPath('test-assets', 'upload-single', 'single-upload.jpg');
 
@@ -21,7 +22,7 @@ test.describe('Single photo upload', () => {
     expect(uids.length).toBeGreaterThanOrEqual(1);
 
     const trackedUid = uploadPage.trackedUids[0];
-    const tileBox = await page.locator(`.is-photo[data-uid="${trackedUid}"]`).boundingBox();
+    const tileBox = await libraryPage.getPhotoTile(trackedUid).boundingBox();
     await expect(page).toHaveScreenshot('uploaded-single-photo-tile.png', {
       clip: { x: tileBox!.x, y: tileBox!.y, width: 300, height: 388 },
     });

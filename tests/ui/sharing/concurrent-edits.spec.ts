@@ -4,6 +4,7 @@ import { PhotoDetailPage } from '../../../pages/PhotoDetailPage.js';
 import { LibraryPage } from '../../../pages/LibraryPage.js';
 import { BASE_URL } from '../../../config.js';
 import { createPath } from '../../../lib/assets.js';
+import { getAdminAuthPath } from '../../../lib/auth-paths.js';
 
 test.describe('Concurrent Edits', () => {
   test('TC-CONC-001 User sees last-write-wins when two users edit the same photo title concurrently @P2', async ({
@@ -20,8 +21,8 @@ test.describe('Concurrent Edits', () => {
     expect(uid).toBeTruthy();
 
     const [context1, context2] = await Promise.all([
-      browser.newContext({ storageState: 'playwright/.auth/adminState.json' }),
-      browser.newContext({ storageState: 'playwright/.auth/adminState.json' }),
+      browser.newContext({ storageState: getAdminAuthPath(test.info().workerIndex) }),
+      browser.newContext({ storageState: getAdminAuthPath(test.info().workerIndex) }),
     ]);
     const [page1, page2] = await Promise.all([context1.newPage(), context2.newPage()]);
 
@@ -65,7 +66,8 @@ test.describe('Concurrent Edits', () => {
     expect(updatedPhoto.Title).toBe('Title From User 2');
 
     await page.goto(BASE_URL + '/library/browse');
-    const tile = page.locator(`.is-photo[data-uid="${uid}"]`);
+    const libraryPageMain = new LibraryPage(page);
+    const tile = libraryPageMain.getPhotoTile(uid);
     await tile.waitFor({ state: 'visible', timeout: 15000 });
     const box = await tile.boundingBox();
     await expect(page).toHaveScreenshot('photo-tile-last-write-wins.png', {
