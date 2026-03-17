@@ -142,3 +142,9 @@ env/local.env
 .opencode
 dupa
 .devcontainer
+
+# Windows local playwright reports
+New folder/
+
+# Playwright-generated copies of test assets (hash-suffixed)
+test-assets/**/*_????????????????.*
