@@ -1,8 +1,9 @@
 import { test as setup } from '@playwright/test';
-import { photoprism, getWorkerBaseUrl } from '../config.js';
+import { getWorkerBaseUrl } from '../config.js';
 import { loginViaAPI } from '../lib/auth.js';
 import { getUserAuthPath } from '../lib/auth-paths.js';
 import { mkdirSync } from 'fs';
+import { execSync } from 'child_process';
 
 const username = process.env['PHOTOPRISM_USER_USERNAME'] || 'testuser';
 const password = process.env['PHOTOPRISM_USER_PASSWORD'] || 'testuser123!';
@@ -10,56 +11,25 @@ const password = process.env['PHOTOPRISM_USER_PASSWORD'] || 'testuser123!';
 setup('create user and authenticate', async ({ browser }) => {
   mkdirSync('playwright/.auth', { recursive: true });
   const workerCount = parseInt(process.env['WORKER_COUNT'] ?? '4', 10);
+  const useDockerWorkers = process.env['PLAYWRIGHT_DOCKER_WORKERS'] === 'true';
   for (let i = 0; i < workerCount; i++) {
     const baseUrl = getWorkerBaseUrl(i);
-    const adminContext = await browser.newContext();
-    try {
-      await loginViaAPI(photoprism.username, photoprism.password, adminContext, baseUrl);
-      const adminPage = await adminContext.newPage();
-      await adminPage.goto(baseUrl);
-
-      const adminToken = await adminPage.evaluate(() => {
-        const keys = Object.keys(localStorage);
-        const tokenKey = keys.find((k) => k.endsWith('session.token'));
-        return tokenKey ? localStorage.getItem(tokenKey) : null;
-      });
-
-      if (!adminToken) throw new Error('Could not obtain admin session token');
-
-      const MAX_ATTEMPTS = 15;
-      let createUserResponse = await adminContext.request.post(`${baseUrl}/api/v1/users`, {
-        headers: { 'X-Auth-Token': adminToken },
-        data: { Name: username, Password: password, Role: 'user' },
-      });
-      for (let attempt = 1; attempt < MAX_ATTEMPTS && createUserResponse.status() === 404; attempt++) {
-        await new Promise<void>((r) => setTimeout(r, 3000));
-        createUserResponse = await adminContext.request.post(`${baseUrl}/api/v1/users`, {
-          headers: { 'X-Auth-Token': adminToken },
-          data: { Name: username, Password: password, Role: 'user' },
-        });
-      }
-
-      if (createUserResponse.status() === 404) {
-        throw new Error(
-          `/api/v1/users returned 404 on worker ${i} after ${MAX_ATTEMPTS} attempts — PhotoPrism version may not support user management`
-        );
-      }
-
-      if (createUserResponse.status() !== 201 && createUserResponse.status() !== 409) {
-        throw new Error(`Unexpected response from user creation API: ${createUserResponse.status()}`);
-      }
-
-      const userContext = await browser.newContext();
+    if (useDockerWorkers) {
+      const containerName = `pw-worker-${i}-photoprism-1`;
       try {
-        await loginViaAPI(username, password, userContext, baseUrl);
-        const userPage = await userContext.newPage();
-        await userPage.goto(baseUrl);
-        await userContext.storageState({ path: getUserAuthPath(i) });
-      } finally {
-        await userContext.close();
-      }
+        execSync(`docker exec ${containerName} photoprism users add -r user -p "${password}" "${username}"`, {
+          stdio: 'pipe',
+        });
+      } catch {}
+    }
+    const userContext = await browser.newContext();
+    try {
+      await loginViaAPI(username, password, userContext, baseUrl);
+      const userPage = await userContext.newPage();
+      await userPage.goto(baseUrl);
+      await userContext.storageState({ path: getUserAuthPath(i) });
     } finally {
-      await adminContext.close();
+      await userContext.close();
     }
   }
 });
