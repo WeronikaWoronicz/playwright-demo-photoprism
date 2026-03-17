@@ -1,6 +1,7 @@
 import { type Page } from '@playwright/test';
 import { BASE_URL } from '../config.js';
 import { randomBytes } from 'crypto';
+import { createAlbum, addPhotosToAlbum, getAlbumPhotos, deleteAlbum } from '../lib/photoprism-api.js';
 
 const selectors = {
   albums: {
@@ -62,55 +63,24 @@ export class AlbumPage {
     return this.page.locator(selectors.albums.card).count();
   }
 
-  async getAuthToken(): Promise<string> {
-    const state = await this.page.context().storageState();
-    const token = state.origins
-      .flatMap((o) => o.localStorage ?? [])
-      .find((item) => item.name === 'session.token')?.value;
-    if (!token) throw new Error('No auth token found in storageState');
-    return token;
-  }
-
   async createAlbumViaAPI(name: string): Promise<string> {
-    const resp = await this.page.request.post(`${BASE_URL}/api/v1/albums`, {
-      headers: { 'X-Auth-Token': await this.getAuthToken() },
-      data: { Title: name },
-    });
-    const body = await resp.json();
-    const uid = body.UID as string;
+    const uid = await createAlbum(this.page, name);
     this._trackedAlbumUids.push(uid);
     return uid;
   }
 
   async addPhotosToAlbumViaAPI(albumUid: string, photoUids: string[]): Promise<void> {
-    await this.page.request.post(`${BASE_URL}/api/v1/albums/${albumUid}/photos`, {
-      headers: { 'X-Auth-Token': await this.getAuthToken() },
-      data: { photos: photoUids },
-    });
+    await addPhotosToAlbum(this.page, albumUid, photoUids);
   }
 
   async getAlbumPhotosViaAPI(albumUid: string): Promise<Array<{ UID: string }>> {
-    const resp = await this.page.request.get(`${BASE_URL}/api/v1/photos`, {
-      params: { count: 1000, album: albumUid },
-      headers: { 'X-Auth-Token': await this.getAuthToken() },
-    });
-    return resp.json();
+    return getAlbumPhotos(this.page, albumUid);
   }
 
   async deleteTrackedAlbums(): Promise<void> {
-    const token = await this.getAuthToken().catch(() => {
-      console.warn('AlbumPage: auth token not found in storageState');
-      return null;
-    });
-    if (!token || this._trackedAlbumUids.length === 0) return;
+    if (this._trackedAlbumUids.length === 0) return;
     for (const uid of this._trackedAlbumUids) {
-      await this.page.request
-        .delete(`${BASE_URL}/api/v1/albums/${uid}`, {
-          headers: { 'X-Auth-Token': token },
-        })
-        .catch((_err: unknown) => {
-          console.warn(`AlbumPage: failed to delete album ${uid}, may already be deleted`);
-        });
+      await deleteAlbum(this.page, uid);
     }
     this._trackedAlbumUids = [];
   }
