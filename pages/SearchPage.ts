@@ -12,13 +12,10 @@ export class SearchPage {
 
   async search(query: string) {
     await this.page.getByRole('textbox', { name: selectors.search.input }).fill(query);
-    await this.page.keyboard.press('Enter');
-    await this.page
-      .waitForURL((url) => url.searchParams.get('q') === query || url.hash.includes(encodeURIComponent(query)), {
-        timeout: 5000,
-      })
-      .catch(() => {});
-    await this.page.waitForTimeout(500);
+    await Promise.all([
+      this.page.waitForResponse((r) => r.url().includes('/api/v1/photos') && r.status() === 200, { timeout: 10000 }),
+      this.page.keyboard.press('Enter'),
+    ]);
   }
 
   async getResultCount(): Promise<number> {

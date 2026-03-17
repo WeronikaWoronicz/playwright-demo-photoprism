@@ -22,7 +22,6 @@ test.describe('Library Search', () => {
       .poll(
         async () => {
           await searchPage.search('search');
-          await page.waitForTimeout(500);
           return searchPage.getResultCount();
         },
         { timeout: 30000 }

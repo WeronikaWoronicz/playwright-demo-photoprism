@@ -7,9 +7,6 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   }
 
   const workerCount = config.workers ?? 4;
-  if (workerCount < 4) {
-    console.warn(`Warning: workers=${workerCount} — recommended minimum is 4 for meaningful parallel isolation`);
-  }
 
   await stopAllKnownWorkers();
 
