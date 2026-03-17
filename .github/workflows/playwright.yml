@@ -35,6 +35,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Lint and type-check
+        run: pnpm lint && pnpm run check-types
+
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         id: playwright-cache
@@ -101,7 +104,7 @@ jobs:
       - name: Build patched PhotoPrism image
         run: docker build -f sut/photoprism.Dockerfile -t photoprism-patched .
       - name: Start PhotoPrism
-        run: docker run -d --name photoprism -p 2342:2342 -e PHOTOPRISM_DATABASE_DRIVER=sqlite -e PHOTOPRISM_ADMIN_USER=${{ secrets.PHOTOPRISM_USERNAME }} -e PHOTOPRISM_ADMIN_PASSWORD=${{ secrets.PHOTOPRISM_PASSWORD }} photoprism-patched
+        run: docker run -d --name photoprism -p 2342:2342 -e PHOTOPRISM_DATABASE_DRIVER=sqlite -e PHOTOPRISM_ADMIN_USER=${{ secrets.PHOTOPRISM_USERNAME }} -e PHOTOPRISM_ADMIN_PASSWORD=${{ secrets.PHOTOPRISM_PASSWORD }} --health-cmd="curl -f http://localhost:2342/api/v1/status || exit 1" --health-interval=30s --health-retries=5 --health-start-period=60s photoprism-patched
       - name: Wait for PhotoPrism to be ready
         run: |
           for i in {1..30}; do
@@ -125,6 +128,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Lint and type-check
+        run: pnpm lint && pnpm run check-types
 
       - name: Install Playwright Browsers
         run: pnpm exec playwright install --with-deps
