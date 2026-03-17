@@ -1,0 +1,134 @@
+diff --git a/frontend/src/component/album/edit/dialog.vue b/frontend/src/component/album/edit/dialog.vue
+index 86f1df88f..82ee7862e 100644
+--- a/frontend/src/component/album/edit/dialog.vue
++++ b/frontend/src/component/album/edit/dialog.vue
+@@ -30,6 +30,7 @@
+                 :label="$gettext('Name')"
+                 :disabled="disabled"
+                 class="input-title"
++                aria-label="Album Title"
+                 @keyup.enter="confirm"
+               ></v-text-field>
+             </v-col>
+@@ -84,7 +85,7 @@
+           <v-btn variant="flat" color="button" class="action-cancel" @click.stop="close">
+             {{ $gettext(`Cancel`) }}
+           </v-btn>
+-          <v-btn variant="flat" color="highlight" class="action-confirm" :disabled="disabled" @click.stop="confirm">
++          <v-btn variant="flat" color="highlight" class="action-confirm" aria-label="Confirm" :disabled="disabled" @click.stop="confirm">
+             {{ $gettext(`Save`) }}
+           </v-btn>
+         </v-card-actions>
+diff --git a/frontend/src/component/navigation.vue b/frontend/src/component/navigation.vue
+index 0027fb9ad..c738f9c9d 100644
+--- a/frontend/src/component/navigation.vue
++++ b/frontend/src/component/navigation.vue
+@@ -705,6 +705,7 @@
+             href="#"
+             :title="$gettext('Upload')"
+             class="menu-action nav-upload"
++            aria-label="Upload"
+             @click.prevent="openUpload()"
+           >
+             <v-icon>mdi-cloud-upload</v-icon>
+diff --git a/frontend/src/component/photo/clipboard.vue b/frontend/src/component/photo/clipboard.vue
+index 91934c8d1..fb142d546 100644
+--- a/frontend/src/component/photo/clipboard.vue
++++ b/frontend/src/component/photo/clipboard.vue
+@@ -13,7 +13,16 @@
+         offset="12"
+       >
+         <template #activator="{ props }">
+-          <v-btn v-bind="props" icon size="52" color="highlight" variant="elevated" density="comfortable" class="action-menu opacity-95 ma-5">
++          <v-btn
++            v-bind="props"
++            icon
++            size="52"
++            color="highlight"
++            variant="elevated"
++            density="comfortable"
++            class="action-menu opacity-95 ma-5"
++            aria-label="Photo Actions"
++          >
+             <span class="count-clipboard">{{ selection.length }}</span>
+           </v-btn>
+         </template>
+@@ -112,6 +121,7 @@
+           density="comfortable"
+           :disabled="selection.length === 0 || busy"
+           class="action-archive"
++          aria-label="Archive"
+           @click.stop="archivePhotos"
+         ></v-btn>
+         <v-btn
+diff --git a/frontend/src/component/photo/view/cards.vue b/frontend/src/component/photo/view/cards.vue
+index bc857b474..bb0f569ec 100644
+--- a/frontend/src/component/photo/view/cards.vue
++++ b/frontend/src/component/photo/view/cards.vue
+@@ -132,6 +132,8 @@
+             -->
+             <button
+               class="input-select"
++              role="checkbox"
++              aria-label="Select Photo"
+               @touchstart.stop="input.touchStart($event, index)"
+               @touchend.stop="onSelect($event, index)"
+               @touchmove.stop
+@@ -158,6 +160,7 @@
+             <button
+               type="button"
+               class="v-btn v-btn--flat bg-button v-btn--variant-tonal action-archive text-center"
++              aria-label="Archive"
+               :title="$pgettext('Verb', 'Archive')"
+               @click.stop="m.archive()"
+             >
+@@ -183,6 +186,7 @@
+               v-if="!showTitles || m.Title"
+               :title="m.Title"
+               class="action-title-edit meta-title text-truncate"
++              aria-label="Edit Details"
+               @click.exact="isSharedView ? openPhoto(index) : editPhoto(index)"
+             >
+               {{ showTitles ? m.Title : m.getOriginalName() }}
+diff --git a/frontend/src/page/albums.vue b/frontend/src/page/albums.vue
+index 90aef339f..888e743d9 100644
+--- a/frontend/src/page/albums.vue
++++ b/frontend/src/page/albums.vue
+@@ -40,6 +40,7 @@
+           :title="$gettext('Add Album')"
+           icon="mdi-plus"
+           class="action-add ms-1"
++          aria-label="Add Album"
+           @click.prevent="create()"
+         ></v-btn>
+ 
+@@ -162,6 +163,7 @@
+           <div
+             :data-uid="album.UID"
+             class="result not-selectable"
++            data-testid="album-item"
+             :class="album.classes(selection.includes(album.UID))"
+             @contextmenu.stop="onContextMenu($event, index)"
+           >
+@@ -223,12 +225,20 @@
+                 v-if="album.Type === 'month'"
+                 :title="album.Title"
+                 class="action-title-edit meta-title text-capitalize"
++                aria-label="Edit Title"
+                 :data-uid="album.UID"
+                 @click.stop.prevent="edit(album)"
+               >
+                 {{ album.getDateString() }}
+               </button>
+-              <button v-else-if="album.Title" :title="album.Title" class="action-title-edit meta-title" :data-uid="album.UID" @click.stop.prevent="edit(album)">
++              <button
++                v-else-if="album.Title"
++                :title="album.Title"
++                class="action-title-edit meta-title"
++                aria-label="Edit Title"
++                :data-uid="album.UID"
++                @click.stop.prevent="edit(album)"
++              >
+                 {{ album.Title }}
+               </button>
+ 
