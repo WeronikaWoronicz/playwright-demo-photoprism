@@ -5,11 +5,14 @@ dotenv.config({
   path: `env/${process.env['NODE_ENV'] ? `${process.env['NODE_ENV']}.env` : `local.env`}`,
 });
 
-const workers = process.env['CI'] ? 2 : 8;
+const workers = parseInt(process.env['WORKER_COUNT'] ?? (process.env['CI'] ? '2' : '8'), 10);
+process.env['WORKER_COUNT'] = String(workers);
 
 export default defineConfig({
   testDir: './tests',
   outputDir: './test-results',
+  globalSetup: './lib/global-setup.ts',
+  globalTeardown: './lib/global-teardown.ts',
   snapshotPathTemplate: 'test-assets/snapshots/{projectName}/{testFilePath}/{arg}{ext}',
   reporter: [['html', { open: 'never', outputFolder: 'playwright-report' }], ['list']],
   use: {
@@ -42,14 +45,14 @@ export default defineConfig({
       testMatch: /cleanup\.setup\.ts/,
       dependencies: ['setup'],
       use: {
-        storageState: 'playwright/.auth/adminState.json',
+        storageState: `playwright/.auth/adminState-worker-0.json`,
       },
     },
     {
       name: 'teardown',
       testMatch: /global\.teardown\.ts/,
       use: {
-        storageState: 'playwright/.auth/adminState.json',
+        storageState: `playwright/.auth/adminState-worker-0.json`,
       },
     },
     {
@@ -57,7 +60,7 @@ export default defineConfig({
       dependencies: ['setup', 'cleanup'],
       use: {
         browserName: 'chromium',
-        storageState: 'playwright/.auth/adminState.json',
+        storageState: `playwright/.auth/adminState-worker-${process.env['TEST_PARALLEL_INDEX'] ?? '0'}.json`,
       },
     },
     {
@@ -71,7 +74,7 @@ export default defineConfig({
       testIgnore: ['**/admin/**'],
       use: {
         browserName: 'chromium',
-        storageState: 'playwright/.auth/userState.json',
+        storageState: `playwright/.auth/userState-worker-${process.env['TEST_PARALLEL_INDEX'] ?? '0'}.json`,
       },
     },
   ],

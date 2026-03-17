@@ -1,9 +1,10 @@
 import { test } from '../../../fixtures/pages.js';
 import { expect } from '@playwright/test';
 import { createPath } from '../../../lib/assets.js';
+import { getAdminAuthPath } from '../../../lib/auth-paths.js';
 
 test.describe.serial('Album CRUD', () => {
-  test.use({ storageState: 'playwright/.auth/adminState.json' });
+  test.use({ storageState: getAdminAuthPath(process.env['TEST_PARALLEL_INDEX'] ?? '0') });
 
   test('TC-ALB-001 User can create an album through UI @P0', async ({ albumPage, page }) => {
     const albumName = albumPage.uniqueName('E2E Test Album');

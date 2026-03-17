@@ -1,5 +1,6 @@
 import { test } from '../../../fixtures/pages.js';
 import { expect } from '@playwright/test';
+import { getUserAuthPath } from '../../../lib/auth-paths.js';
 
 test.describe('Role-Based Access Control', () => {
   test('TC-RBAC-001 User can access settings page as admin @P0', async ({ adminPage, page }) => {
@@ -20,7 +21,7 @@ test.describe('Role-Based Access Control', () => {
 });
 
 test.describe('RBAC — Regular User', () => {
-  test.use({ storageState: 'playwright/.auth/userState.json' });
+  test.use({ storageState: getUserAuthPath(process.env['TEST_PARALLEL_INDEX'] ?? '0') });
 
   test('TC-RBAC-003 User sees expected settings access as regular user @P0', async ({ adminPage }) => {
     await adminPage.navigateToSettings();
