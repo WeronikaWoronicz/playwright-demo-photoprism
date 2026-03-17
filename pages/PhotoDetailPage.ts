@@ -46,7 +46,13 @@ export class PhotoDetailPage {
 
   async archiveSelectedPhoto() {
     await this.page.getByRole('button', { name: /photo actions/i }).click();
-    await this.page.getByRole('button', { name: /archive/i }).click();
+    await Promise.all([
+      this.page.waitForResponse(
+        (resp) => resp.url().includes('/api/v1/batch/photos/archive') && resp.status() === 200,
+        { timeout: 15000 }
+      ),
+      this.page.getByRole('button', { name: /archive/i }).click(),
+    ]);
   }
 
   async rotatePhoto() {
