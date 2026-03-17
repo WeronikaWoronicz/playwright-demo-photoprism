@@ -15,12 +15,10 @@ test.describe('API Endpoint Checks', () => {
     expect(resp.status()).toBe(200);
     const data = (await resp.json()) as Array<{ UID: string; Title: string; OriginalName: string }>;
     expect(Array.isArray(data)).toBe(true);
-
-    if (data.length > 0) {
-      expect(data[0]).toHaveProperty('UID');
-      expect(data[0]).toHaveProperty('Title');
-      expect(data[0]).toHaveProperty('OriginalName');
-    }
+    expect(data.length).toBeGreaterThan(0);
+    expect(data[0]).toHaveProperty('UID');
+    expect(data[0]).toHaveProperty('Title');
+    expect(data[0]).toHaveProperty('OriginalName');
   });
 
   test('TC-API-003 User sees server status from GET /api/v1/status @P1', async ({ page }) => {
