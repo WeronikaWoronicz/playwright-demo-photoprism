@@ -5,7 +5,7 @@ dotenv.config({
   path: `env/${process.env['NODE_ENV'] ? `${process.env['NODE_ENV']}.env` : `local.env`}`,
 });
 
-const workers = parseInt(process.env['WORKER_COUNT'] ?? '4', 10);
+const workers = parseInt(process.env['WORKER_COUNT'] ?? (process.env['CI'] ? '2' : '8'), 10);
 process.env['WORKER_COUNT'] = String(workers);
 
 export default defineConfig({
