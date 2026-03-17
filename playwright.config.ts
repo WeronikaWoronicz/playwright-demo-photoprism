@@ -50,7 +50,7 @@ export default defineConfig({
     },
     {
       name: 'teardown',
-      testMatch: /global\.teardown\.ts/,
+      testMatch: /cleanup\.setup\.ts/,
       use: {
         storageState: `playwright/.auth/adminState-worker-0.json`,
       },
