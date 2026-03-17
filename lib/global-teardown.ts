@@ -1,19 +1,9 @@
 import { stopWorkerContainers, cleanupPortMap } from './docker-worker.js';
 import { existsSync, rmSync, readdirSync, readFileSync } from 'fs';
-import { execSync } from 'child_process';
 import { join } from 'path';
 
-function isDockerAvailable(): boolean {
-  try {
-    execSync('docker info', { stdio: 'pipe' });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export default async function globalTeardown(): Promise<void> {
-  if (!isDockerAvailable()) {
+  if (process.env['PLAYWRIGHT_DOCKER_WORKERS'] !== 'true') {
     return;
   }
 
