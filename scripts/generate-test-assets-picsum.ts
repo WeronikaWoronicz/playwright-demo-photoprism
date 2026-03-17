@@ -42,20 +42,20 @@ function download(url: string, dest: string, redirects = 0): Promise<string> {
     ];
 
     const perTestImages = [
-      { subdir: 'upload-single', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'upl-single-1' },
-      { subdir: 'upload-multiple', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'upl-multi-1' },
-      { subdir: 'upload-multiple', name: 'photo-2.jpg', width: 1600, height: 1200, seed: 'upl-multi-2' },
-      { subdir: 'upload-multiple', name: 'photo-3.jpg', width: 1600, height: 1200, seed: 'upl-multi-3' },
-      { subdir: 'upload-large', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'upl-large-1' },
-      { subdir: 'image-ops', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'img-ops-1' },
-      { subdir: 'metadata-edit', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'meta-edit-1' },
-      { subdir: 'delete-undo', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'del-undo-1' },
-      { subdir: 'browse-filter-sort', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'browse-1' },
-      { subdir: 'browse-filter-sort', name: 'photo-2.jpg', width: 1600, height: 1200, seed: 'browse-2' },
-      { subdir: 'search', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'search-1' },
-      { subdir: 'share-link', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'share-1' },
-      { subdir: 'concurrent-edits', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'conc-edit-1' },
-      { subdir: 'album-crud', name: 'photo-1.jpg', width: 1600, height: 1200, seed: 'album-crud-1' },
+      { subdir: 'upload-single', name: 'single-upload.jpg', width: 1600, height: 1200, seed: 'upl-single-1' },
+      { subdir: 'upload-multiple', name: 'multi-upload-1.jpg', width: 1600, height: 1200, seed: 'upl-multi-1' },
+      { subdir: 'upload-multiple', name: 'multi-upload-2.jpg', width: 1600, height: 1200, seed: 'upl-multi-2' },
+      { subdir: 'upload-multiple', name: 'multi-upload-3.jpg', width: 1600, height: 1200, seed: 'upl-multi-3' },
+      { subdir: 'upload-large', name: 'large-network-abort.jpg', width: 1600, height: 1200, seed: 'upl-large-1' },
+      { subdir: 'image-ops', name: 'rotate-target.jpg', width: 1600, height: 1200, seed: 'img-ops-1' },
+      { subdir: 'metadata-edit', name: 'title-edit-target.jpg', width: 1600, height: 1200, seed: 'meta-edit-1' },
+      { subdir: 'delete-undo', name: 'delete-target.jpg', width: 1600, height: 1200, seed: 'del-undo-1' },
+      { subdir: 'browse-filter-sort', name: 'sort-photo-older.jpg', width: 1600, height: 1200, seed: 'browse-1' },
+      { subdir: 'browse-filter-sort', name: 'sort-photo-newer.jpg', width: 1600, height: 1200, seed: 'browse-2' },
+      { subdir: 'search', name: 'search-target.jpg', width: 1600, height: 1200, seed: 'search-1' },
+      { subdir: 'share-link', name: 'share-link-photo.jpg', width: 1600, height: 1200, seed: 'share-1' },
+      { subdir: 'concurrent-edits', name: 'concurrent-title-edit.jpg', width: 1600, height: 1200, seed: 'conc-edit-1' },
+      { subdir: 'album-crud', name: 'album-add-photo.jpg', width: 1600, height: 1200, seed: 'album-crud-1' },
     ];
 
     const tasks = images.map((img) => {

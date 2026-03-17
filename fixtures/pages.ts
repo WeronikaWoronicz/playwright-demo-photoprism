@@ -8,7 +8,7 @@ import { AdminPage } from '../pages/AdminPage.js';
 import { AlbumPage } from '../pages/AlbumPage.js';
 import { checkA11y } from '../lib/accessibility.js';
 import { test as base } from '@playwright/test';
-import { deletePhotosByUids, deleteAllAlbums } from '../lib/photoprism-api.js';
+import { deletePhotosByUids, deleteAllAlbums, deleteAllPhotos } from '../lib/photoprism-api.js';
 import { createPath } from '../lib/assets.js';
 
 export type Pages = {
@@ -67,13 +67,14 @@ export const test = base.extend<Pages>({
     await use(errors);
   },
   uploadedPhoto: [
-    async ({ uploadPage }, use) => {
+    async ({ uploadPage, context }, use) => {
       const photoPath = createPath('test-assets', 'fixture-photo.jpg');
       await uploadPage.navigateToUploadForm();
       await uploadPage.uploadFiles(photoPath);
       await uploadPage.waitForUploadComplete();
       await uploadPage.waitForPhotoInLibrary();
       await use({ uid: uploadPage.trackedUids[0] });
+      await deleteAllPhotos(context);
     },
     { scope: 'test' },
   ],

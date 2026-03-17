@@ -14,9 +14,7 @@ function resolveBaseUrl(): string {
       const workerIndex = process.env['TEST_WORKER_INDEX'] ?? '0';
       const port = portMap[workerIndex];
       if (port) return `http://127.0.0.1:${port}`;
-    } catch {
-      // fall through to env var
-    }
+    } catch {}
   }
   return get_from_env_or_throw('BASE_URL');
 }
