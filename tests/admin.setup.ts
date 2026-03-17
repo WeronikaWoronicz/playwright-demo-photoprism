@@ -1,11 +1,22 @@
 import { test as setup } from '@playwright/test';
-import { BASE_URL, photoprism } from '../config.js';
+import { photoprism, getWorkerBaseUrl } from '../config.js';
 import { loginViaAPI } from '../lib/auth.js';
+import { getAdminAuthPath } from '../lib/auth-paths.js';
+import { mkdirSync } from 'fs';
 
-const authFile = 'playwright/.auth/adminState.json';
-
-setup('authenticate as admin', async ({ context, page }) => {
-  await loginViaAPI(photoprism.username, photoprism.password, context);
-  await page.goto(BASE_URL);
-  await context.storageState({ path: authFile });
+setup('authenticate as admin', async ({ browser }) => {
+  mkdirSync('playwright/.auth', { recursive: true });
+  const workerCount = parseInt(process.env['WORKER_COUNT'] ?? '4', 10);
+  for (let i = 0; i < workerCount; i++) {
+    const baseUrl = getWorkerBaseUrl(i);
+    const context = await browser.newContext();
+    try {
+      await loginViaAPI(photoprism.username, photoprism.password, context, baseUrl);
+      const page = await context.newPage();
+      await page.goto(baseUrl);
+      await context.storageState({ path: getAdminAuthPath(i) });
+    } finally {
+      await context.close();
+    }
+  }
 });

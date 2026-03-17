@@ -5,7 +5,6 @@ import { checkA11y } from '../../../lib/accessibility.js';
 
 test.describe('Accessibility Smoke Tests', () => {
   test('TC-A11Y-001 User sees no critical a11y violations on login page @P1', async ({ browser }) => {
-    // Use a fresh unauthenticated context so addInitScript doesn't re-inject auth
     const ctx = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const unauthPage = await ctx.newPage();
     await unauthPage.goto(BASE_URL + '/library/login');
@@ -13,7 +12,10 @@ test.describe('Accessibility Smoke Tests', () => {
     await ctx.close();
   });
 
-  test('TC-A11Y-002 User sees no critical a11y violations on library browse page @P1', async ({ libraryPage, a11yCheck }) => {
+  test('TC-A11Y-002 User sees no critical a11y violations on library browse page @P1', async ({
+    libraryPage,
+    a11yCheck,
+  }) => {
     await libraryPage.navigateToBrowse();
     await a11yCheck();
   });

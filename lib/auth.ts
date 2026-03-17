@@ -1,8 +1,14 @@
 import { BrowserContext } from '@playwright/test';
 import { BASE_URL } from '../config.js';
 
-export async function loginViaAPI(username: string, password: string, browserContext: BrowserContext) {
-  const response = await browserContext.request.post(`${BASE_URL}/api/v1/session`, {
+export async function loginViaAPI(
+  username: string,
+  password: string,
+  browserContext: BrowserContext,
+  baseUrl?: string
+) {
+  const url = baseUrl ?? BASE_URL;
+  const response = await browserContext.request.post(`${url}/api/v1/session`, {
     data: { username, password },
   });
   const body = await response.json();

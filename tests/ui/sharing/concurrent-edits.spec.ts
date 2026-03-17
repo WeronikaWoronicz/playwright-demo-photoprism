@@ -1,9 +1,10 @@
-import path from 'path';
 import { test } from '../../../fixtures/pages.js';
 import { expect } from '@playwright/test';
-import { getPhotos } from '../../../lib/photoprism-api.js';
 import { PhotoDetailPage } from '../../../pages/PhotoDetailPage.js';
+import { LibraryPage } from '../../../pages/LibraryPage.js';
 import { BASE_URL } from '../../../config.js';
+import { createPath } from '../../../lib/assets.js';
+import { getAdminAuthPath } from '../../../lib/auth-paths.js';
 
 test.describe('Concurrent Edits', () => {
   test('TC-CONC-001 User sees last-write-wins when two users edit the same photo title concurrently @P2', async ({
@@ -12,31 +13,29 @@ test.describe('Concurrent Edits', () => {
     browser,
   }) => {
     await uploadPage.navigateToUploadForm();
-    await uploadPage.uploadFiles(path.join(process.cwd(), 'test-assets', 'photo-1.jpg'));
+    await uploadPage.uploadFiles(createPath('test-assets', 'concurrent-edits', 'concurrent-title-edit.jpg'));
     await uploadPage.waitForUploadComplete();
     await uploadPage.waitForPhotoInLibrary();
 
-    const photos = await getPhotos(page, 1);
-    expect(photos.length).toBeGreaterThanOrEqual(1);
-    const uid = photos[0].UID;
+    const uid = uploadPage.trackedUids[0];
+    expect(uid).toBeTruthy();
 
+    const workerIdx = parseInt(process.env['TEST_PARALLEL_INDEX'] ?? '0', 10);
     const [context1, context2] = await Promise.all([
-      browser.newContext({ storageState: 'playwright/.auth/adminState.json' }),
-      browser.newContext({ storageState: 'playwright/.auth/adminState.json' }),
+      browser.newContext({ storageState: getAdminAuthPath(workerIdx) }),
+      browser.newContext({ storageState: getAdminAuthPath(workerIdx) }),
     ]);
     const [page1, page2] = await Promise.all([context1.newPage(), context2.newPage()]);
 
     await Promise.all([page1.goto(BASE_URL + '/library/browse'), page2.goto(BASE_URL + '/library/browse')]);
-    const photoSelector = `.is-photo[data-uid="${uid}"]`;
-    await Promise.all([
-      page1.locator(photoSelector).waitFor({ timeout: 15000 }),
-      page2.locator(photoSelector).waitFor({ timeout: 15000 }),
-    ]);
-    await Promise.all([page1.locator(photoSelector).click(), page2.locator(photoSelector).click()]);
+    const libraryPage1 = new LibraryPage(page1);
+    const libraryPage2 = new LibraryPage(page2);
+    await Promise.all([libraryPage1.waitForPhoto(uid), libraryPage2.waitForPhoto(uid)]);
+    await Promise.all([libraryPage1.clickPhoto(uid), libraryPage2.clickPhoto(uid)]);
 
     const photoDetailPage1 = new PhotoDetailPage(page1);
     const photoDetailPage2 = new PhotoDetailPage(page2);
-    await Promise.all([photoDetailPage1.openEditPanel(), photoDetailPage2.openEditPanel()]);
+    await Promise.all([photoDetailPage1.openEditPanel(uid), photoDetailPage2.openEditPanel(uid)]);
 
     await photoDetailPage1.editTitle('Title From User 1');
     await Promise.all([
@@ -57,9 +56,25 @@ test.describe('Concurrent Edits', () => {
     await context1.close();
     await context2.close();
 
-    const updatedPhotos = await getPhotos(page, 1);
-    expect(updatedPhotos.length).toBeGreaterThanOrEqual(1);
-    const updatedPhoto = updatedPhotos[0] as { UID: string; OriginalName: string; Title: string };
+    const state = await page.context().storageState();
+    const token = state.origins
+      .flatMap((o) => o.localStorage ?? [])
+      .find((item) => item.name.endsWith('session.token'))?.value;
+    expect(token, 'session token not found in storageState').toBeTruthy();
+    const resp = await page.request.get(`${BASE_URL}/api/v1/photos/${uid}`, {
+      headers: { 'X-Auth-Token': token! },
+    });
+    const updatedPhoto = (await resp.json()) as { UID: string; Title: string };
     expect(updatedPhoto.Title).toBe('Title From User 2');
+
+    await page.goto(BASE_URL + '/library/browse');
+    const libraryPageMain = new LibraryPage(page);
+    const tile = libraryPageMain.getPhotoTile(uid);
+    await tile.waitFor({ state: 'visible', timeout: 15000 });
+    const box = await tile.boundingBox();
+    expect(box, 'photo tile bounding box is null').not.toBeNull();
+    await expect(page).toHaveScreenshot('photo-tile-last-write-wins.png', {
+      clip: { x: box!.x, y: box!.y, width: 300, height: 388 },
+    });
   });
 });

@@ -1,6 +1,6 @@
-import path from 'path';
 import { test } from '../../../fixtures/pages.js';
 import { expect } from '@playwright/test';
+import { createPath } from '../../../lib/assets.js';
 
 test.describe('Library Browse and Sort', () => {
   test('TC-LIB-001 User can browse the photo library @P0', async ({ libraryPage, page }) => {
@@ -12,7 +12,7 @@ test.describe('Library Browse and Sort', () => {
 
   test('TC-LIB-002 User sees uploaded photos in library @P0', async ({ uploadPage, libraryPage }) => {
     await uploadPage.navigateToUploadForm();
-    await uploadPage.uploadFiles(path.join(process.cwd(), 'test-assets', 'photo-1.jpg'));
+    await uploadPage.uploadFiles(createPath('test-assets', 'browse-filter-sort', 'sort-photo-older.jpg'));
     await uploadPage.waitForUploadComplete();
     await uploadPage.waitForPhotoInLibrary();
 
@@ -28,20 +28,25 @@ test.describe('Library Browse and Sort', () => {
   test('TC-LIB-003 User can sort photos by date @P2', async ({ uploadPage, libraryPage }) => {
     await uploadPage.navigateToUploadForm();
     await uploadPage.uploadFiles([
-      path.join(process.cwd(), 'test-assets', 'photo-1.jpg'),
-      path.join(process.cwd(), 'test-assets', 'photo-2.jpg'),
+      createPath('test-assets', 'browse-filter-sort', 'sort-photo-older.jpg'),
+      createPath('test-assets', 'browse-filter-sort', 'sort-photo-newer.jpg'),
     ]);
     await uploadPage.waitForUploadComplete();
     await uploadPage.waitForPhotoInLibrary();
 
-    await libraryPage.navigateToBrowse();
+    const uploadedSet = new Set(uploadPage.trackedUids);
+
     await libraryPage.setSortOrder('newest');
-    await libraryPage.waitForPhotos();
-    const newestUids = await libraryPage.getRenderedPhotoUids();
+    for (const uid of uploadPage.trackedUids) {
+      await libraryPage.waitForPhoto(uid);
+    }
+    const newestUids = (await libraryPage.getRenderedPhotoUids()).filter((uid) => uploadedSet.has(uid));
 
     await libraryPage.setSortOrder('oldest');
-    await libraryPage.waitForPhotos();
-    const oldestUids = await libraryPage.getRenderedPhotoUids();
+    for (const uid of uploadPage.trackedUids) {
+      await libraryPage.waitForPhoto(uid);
+    }
+    const oldestUids = (await libraryPage.getRenderedPhotoUids()).filter((uid) => uploadedSet.has(uid));
 
     expect(newestUids.length).toBeGreaterThanOrEqual(1);
     expect(oldestUids.length).toBeGreaterThanOrEqual(1);

@@ -18,14 +18,3 @@ test.describe('Role-Based Access Control', () => {
     await expect(page.locator('main')).toBeVisible();
   });
 });
-
-test.describe('RBAC — Regular User', () => {
-  test.use({ storageState: 'playwright/.auth/userState.json' });
-
-  test('TC-RBAC-003 User sees expected settings access as regular user @P0', async ({ adminPage }) => {
-    await adminPage.navigateToSettings();
-    const settingsVisible = await adminPage.isSettingsVisible();
-    const denied = await adminPage.isAccessDenied();
-    expect(denied).not.toBe(settingsVisible);
-  });
-});

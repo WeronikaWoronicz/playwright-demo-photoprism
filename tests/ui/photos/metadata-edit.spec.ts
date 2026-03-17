@@ -1,7 +1,7 @@
-import path from 'path';
 import { test } from '../../../fixtures/pages.js';
 import { expect } from '@playwright/test';
 import { generatePhotoMetadata } from '../../../fixtures/testData/photoData.js';
+import { createPath } from '../../../lib/assets.js';
 
 test.describe('Photo Metadata Edit', () => {
   test('TC-PHO-001 User can edit photo title and verify persistence @P1', async ({
@@ -11,15 +11,12 @@ test.describe('Photo Metadata Edit', () => {
     page,
   }) => {
     await uploadPage.navigateToUploadForm();
-    await uploadPage.uploadFiles(path.join(process.cwd(), 'test-assets', 'photo-1.jpg'));
+    await uploadPage.uploadFiles(createPath('test-assets', 'metadata-edit', 'title-edit-target.jpg'));
     await uploadPage.waitForUploadComplete();
-    await uploadPage.waitForPhotoInLibrary();
+    await uploadPage.waitForPhotoInLibrary(1, 'title-edit-target.jpg');
 
-    await libraryPage.navigateToBrowse();
-    await libraryPage.waitForPhotos();
-    const uids = await libraryPage.getRenderedPhotoUids();
-    expect(uids.length).toBeGreaterThanOrEqual(1);
-    const uid = uids[0];
+    const uid = uploadPage.trackedUids[0];
+    expect(uid).toBeTruthy();
 
     await photoDetailPage.openPhoto(uid);
     await photoDetailPage.openEditPanel();
@@ -33,5 +30,6 @@ test.describe('Photo Metadata Edit', () => {
     await photoDetailPage.openPhoto(uid);
     await photoDetailPage.openEditPanel();
     await expect(page.getByRole('textbox', { name: 'Title' })).toHaveValue(metadata.title);
+    await expect(page.getByRole('textbox', { name: 'Title' })).toHaveScreenshot('title-field-persisted.png');
   });
 });

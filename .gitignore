@@ -50,8 +50,6 @@ web_modules/
 # TypeScript cache
 *.tsbuildinfo
 
-# Optional npm cache directory
-.npm
 
 # Optional eslint cache
 .eslintcache
@@ -133,3 +131,20 @@ dist
 
 # Environment files with credentials
 env/local.env
+
+# Worker ports configuration
+.worker-ports.json
+
+
+.pnpm-store
+.claude
+.sisyphus
+.opencode
+dupa
+.devcontainer
+
+# Windows local playwright reports
+New folder/
+
+# Playwright-generated copies of test assets (hash-suffixed)
+test-assets/**/*_????????????????.*

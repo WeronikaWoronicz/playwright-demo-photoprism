@@ -5,9 +5,15 @@ dotenv.config({
   path: `env/${process.env['NODE_ENV'] ? `${process.env['NODE_ENV']}.env` : `local.env`}`,
 });
 
+const workers = parseInt(process.env['WORKER_COUNT'] ?? '4', 10);
+process.env['WORKER_COUNT'] = String(workers);
+
 export default defineConfig({
   testDir: './tests',
   outputDir: './test-results',
+  globalSetup: './lib/global-setup.ts',
+  globalTeardown: './lib/global-teardown.ts',
+  snapshotPathTemplate: 'test-assets/snapshots/{projectName}/{testFilePath}/{arg}{ext}',
   reporter: [['html', { open: 'never', outputFolder: 'playwright-report' }], ['list']],
   use: {
     baseURL: process.env['BASE_URL'],
@@ -20,35 +26,41 @@ export default defineConfig({
   timeout: 120 * 1000,
   expect: {
     timeout: 10000,
+    toHaveScreenshot: {
+      threshold: 0.2,
+      maxDiffPixelRatio: 0.05,
+    },
   },
   retries: process.env['CI'] ? 2 : 0,
-  workers: 1,
+  fullyParallel: true,
+  workers,
   projects: [
     {
       name: 'setup',
       testMatch: /admin\.setup\.ts/,
+      teardown: 'teardown',
     },
     {
-      name: 'chromium',
+      name: 'cleanup',
+      testMatch: /cleanup\.setup\.ts/,
       dependencies: ['setup'],
       use: {
-        browserName: 'chromium',
-        storageState: 'playwright/.auth/adminState.json',
+        storageState: `playwright/.auth/adminState-worker-0.json`,
       },
     },
     {
-      name: 'user-setup',
-      testMatch: /user\.setup\.ts/,
-      dependencies: ['setup'],
+      name: 'teardown',
+      testMatch: /global\.teardown\.ts/,
+      use: {
+        storageState: `playwright/.auth/adminState-worker-0.json`,
+      },
     },
     {
-      name: 'user-chromium',
-      dependencies: ['user-setup'],
-      // Exclude admin-only tests that require admin storageState and cause race conditions
-      testIgnore: ['**/admin/**'],
+      name: 'chromium',
+      dependencies: ['setup', 'cleanup'],
       use: {
         browserName: 'chromium',
-        storageState: 'playwright/.auth/userState.json',
+        storageState: `playwright/.auth/adminState-worker-${process.env['TEST_PARALLEL_INDEX'] ?? '0'}.json`,
       },
     },
   ],

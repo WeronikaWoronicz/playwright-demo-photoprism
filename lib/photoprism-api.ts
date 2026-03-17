@@ -1,13 +1,106 @@
 import { BrowserContext, Page } from '@playwright/test';
 import { BASE_URL } from '../config.js';
 
+async function getSessionToken(page: Page): Promise<string | undefined> {
+  const state = await page.context().storageState();
+  return state.origins.flatMap((o) => o.localStorage ?? []).find((item) => item.name === 'session.token')?.value;
+}
+
+export async function createAlbum(page: Page, name: string): Promise<string> {
+  const token = await getSessionToken(page);
+  if (!token) throw new Error('No session token');
+  const resp = await page.request.post(`${BASE_URL}/api/v1/albums`, {
+    headers: { 'X-Auth-Token': token },
+    data: { Title: name },
+  });
+  const body = await resp.json();
+  return body.UID as string;
+}
+
+export async function addPhotosToAlbum(page: Page, albumUid: string, photoUids: string[]): Promise<void> {
+  const token = await getSessionToken(page);
+  if (!token) throw new Error('No session token');
+  await page.request.post(`${BASE_URL}/api/v1/albums/${albumUid}/photos`, {
+    headers: { 'X-Auth-Token': token },
+    data: { photos: photoUids },
+  });
+}
+
+export async function getAlbumPhotos(page: Page, albumUid: string): Promise<Array<{ UID: string }>> {
+  const token = await getSessionToken(page);
+  if (!token) throw new Error('No session token');
+  const resp = await page.request.get(`${BASE_URL}/api/v1/photos`, {
+    params: { count: 1000, album: albumUid },
+    headers: { 'X-Auth-Token': token },
+  });
+  return resp.json();
+}
+
+export async function deleteAlbum(page: Page, uid: string): Promise<void> {
+  const token = await getSessionToken(page);
+  if (!token) return;
+  await page.request
+    .delete(`${BASE_URL}/api/v1/albums/${uid}`, {
+      headers: { 'X-Auth-Token': token },
+    })
+    .catch(() => {});
+}
+
+export async function getPhotoUidsByFilenameTag(
+  page: Page,
+  tag: string
+): Promise<{ libraryUids: string[]; reviewUids: string[] }> {
+  const token = await getSessionToken(page);
+  if (!token) return { libraryUids: [], reviewUids: [] };
+  const [libResp, revResp] = await Promise.all([
+    page.request.get(`${BASE_URL}/api/v1/photos`, {
+      params: { count: 100, offset: 0 },
+      headers: { 'X-Auth-Token': token },
+    }),
+    page.request.get(`${BASE_URL}/api/v1/photos`, {
+      params: { count: 100, offset: 0, review: true },
+      headers: { 'X-Auth-Token': token },
+    }),
+  ]);
+  const libPhotos = libResp.ok() ? ((await libResp.json()) as Array<{ UID: string; OriginalName?: string }>) : [];
+  const revPhotos = revResp.ok() ? ((await revResp.json()) as Array<{ UID: string; OriginalName?: string }>) : [];
+  const matchesTag = (p: { OriginalName?: string }) => p.OriginalName?.includes(tag) ?? false;
+  return {
+    libraryUids: libPhotos.filter(matchesTag).map((p) => p.UID),
+    reviewUids: revPhotos.filter(matchesTag).map((p) => p.UID),
+  };
+}
+
+export async function approvePhotos(page: Page, uids: string[]): Promise<void> {
+  if (uids.length === 0) return;
+  const token = await getSessionToken(page);
+  if (!token) return;
+  await page.request.post(`${BASE_URL}/api/v1/batch/photos/approve`, {
+    data: { photos: uids },
+    headers: { 'X-Auth-Token': token },
+  });
+}
+
+export async function triggerIndex(page: Page): Promise<void> {
+  const token = await getSessionToken(page);
+  if (!token) return;
+  page.request
+    .post(`${BASE_URL}/api/v1/index`, {
+      data: { action: 'index' },
+      headers: { 'X-Auth-Token': token },
+    })
+    .catch(() => {});
+}
+
 export async function deleteAllPhotos(context: BrowserContext) {
   const state = await context.storageState();
   const sessionToken = state.origins
     .flatMap((o) => o.localStorage ?? [])
     .find((item) => item.name === 'session.token')?.value;
 
-  if (!sessionToken) return;
+  if (!sessionToken) {
+    return;
+  }
 
   const reviewUIDs = await getAllPhotoUIDsViaContext(context, sessionToken, { review: true });
   if (reviewUIDs.length > 0) {
@@ -37,6 +130,22 @@ export async function deleteAllPhotos(context: BrowserContext) {
 
   if (!response.ok()) {
     throw new Error(`Failed to delete photos: ${response.status()}`);
+  }
+}
+
+export async function deletePhotosByUids(context: BrowserContext, uids: string[]): Promise<void> {
+  if (uids.length === 0) return;
+  const state = await context.storageState();
+  const sessionToken = state.origins
+    .flatMap((o) => o.localStorage ?? [])
+    .find((item) => item.name === 'session.token')?.value;
+  if (!sessionToken) return;
+  const response = await context.request.post(`${BASE_URL}/api/v1/batch/photos/delete`, {
+    data: { photos: uids },
+    headers: { 'X-Auth-Token': sessionToken },
+  });
+  if (!response.ok() && response.status() !== 400 && response.status() !== 404) {
+    throw new Error(`Failed to delete photos by UIDs: ${response.status()}`);
   }
 }
 
@@ -85,49 +194,4 @@ export async function deleteAllAlbums(context: BrowserContext) {
       headers: { 'X-Auth-Token': sessionToken },
     });
   }
-}
-
-export async function getPhotos(page: Page, count: number): Promise<Array<{ UID: string; OriginalName: string }>> {
-  const state = await page.context().storageState();
-  const token = state.origins.flatMap((o) => o.localStorage ?? []).find((item) => item.name === 'session.token')?.value;
-
-  if (!token) {
-    throw new Error('No session token found in storage state');
-  }
-
-  const response = await page.request.get(`${BASE_URL}/api/v1/photos`, {
-    params: { count, offset: 0 },
-    headers: { 'X-Auth-Token': token },
-  });
-  if (!response.ok()) {
-    throw new Error(`Failed to get photos: ${response.status()}`);
-  }
-  return response.json() as Promise<Array<{ UID: string; OriginalName: string }>>;
-}
-
-/**
- * Approves all photos currently in the review queue via API.
- * Test assets are low-quality (quality=2) and always land in review.
- * Call this after waitForUploadComplete() to move photos to the main library.
- */
-export async function approveAllReviewPhotos(page: Page): Promise<void> {
-  const state = await page.context().storageState();
-  const token = state.origins.flatMap((o) => o.localStorage ?? []).find((item) => item.name === 'session.token')?.value;
-  if (!token) throw new Error('No session token found in storage state');
-
-  const listResp = await page.request.get(`${BASE_URL}/api/v1/photos`, {
-    params: { count: 10000, offset: 0, review: true },
-    headers: { 'X-Auth-Token': token },
-  });
-  if (!listResp.ok()) throw new Error(`Failed to list review photos: ${listResp.status()}`);
-
-  const photos = (await listResp.json()) as Array<{ UID: string }>;
-  if (photos.length === 0) return;
-
-  const uids = photos.map((p) => p.UID);
-  const approveResp = await page.request.post(`${BASE_URL}/api/v1/batch/photos/approve`, {
-    data: { photos: uids },
-    headers: { 'X-Auth-Token': token },
-  });
-  if (!approveResp.ok()) throw new Error(`Failed to approve review photos: ${approveResp.status()}`);
 }

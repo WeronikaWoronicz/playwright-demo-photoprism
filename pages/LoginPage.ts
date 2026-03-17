@@ -24,7 +24,7 @@ export class LoginPage {
   }
 
   async clickSignInBtn() {
-    await this.page.getByText(selectors.buttons.signIn).click();
+    await this.page.getByRole('button', { name: selectors.buttons.signIn }).click();
   }
 
   async clickPhotoprismLogoMenu() {

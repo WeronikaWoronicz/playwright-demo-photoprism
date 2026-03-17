@@ -12,24 +12,13 @@ export class SearchPage {
 
   async search(query: string) {
     await this.page.getByRole('textbox', { name: selectors.search.input }).fill(query);
-    await this.page.keyboard.press('Enter');
+    await Promise.all([
+      this.page.waitForResponse((r) => r.url().includes('/api/v1/photos') && r.status() === 200, { timeout: 10000 }),
+      this.page.keyboard.press('Enter'),
+    ]);
   }
 
   async getResultCount(): Promise<number> {
     return this.page.locator(selectors.search.tile).count();
-  }
-
-  async getResultTitles(): Promise<string[]> {
-    return this.page
-      .locator(selectors.search.tile)
-      .evaluateAll((els) => els.map((el) => el.getAttribute('title') ?? el.textContent ?? ''));
-  }
-
-  async clearSearch() {
-    await this.page.getByRole('textbox', { name: selectors.search.input }).clear();
-  }
-
-  async waitForResults() {
-    await this.page.locator(selectors.search.tile).first().waitFor({ timeout: 10000 });
   }
 }

@@ -8,7 +8,8 @@ import { AdminPage } from '../pages/AdminPage.js';
 import { AlbumPage } from '../pages/AlbumPage.js';
 import { checkA11y } from '../lib/accessibility.js';
 import { test as base } from '@playwright/test';
-import { deleteAllPhotos, deleteAllAlbums } from '../lib/photoprism-api.js';
+import { deletePhotosByUids, deleteAllAlbums, deleteAllPhotos } from '../lib/photoprism-api.js';
+import { createPath } from '../lib/assets.js';
 
 export type Pages = {
   loginPage: LoginPage;
@@ -21,6 +22,7 @@ export type Pages = {
   albumPage: AlbumPage;
   a11yCheck: (opts?: { disableRules?: string[] }) => Promise<void>;
   pageErrors: Error[];
+  uploadedPhoto: { uid: string };
 };
 
 export const test = base.extend<Pages>({
@@ -28,9 +30,10 @@ export const test = base.extend<Pages>({
     await use(new LoginPage(page));
   },
   uploadPage: async ({ page, context }, use) => {
-    await deleteAllPhotos(context);
-    await use(new UploadPage(page));
-    await deleteAllPhotos(context);
+    const uploadPageObj = new UploadPage(page);
+    await use(uploadPageObj);
+    await deletePhotosByUids(context, uploadPageObj.trackedUids);
+    uploadPageObj.cleanupTempFiles();
   },
   libraryPage: async ({ page }, use) => {
     await use(new LibraryPage(page));
@@ -41,15 +44,18 @@ export const test = base.extend<Pages>({
   searchPage: async ({ page }, use) => {
     await use(new SearchPage(page));
   },
-  sharePage: async ({ page }, use) => {
+  sharePage: async ({ page, context }, use) => {
     await use(new SharePage(page));
+    await deleteAllAlbums(context);
   },
   adminPage: async ({ page }, use) => {
     await use(new AdminPage(page));
   },
   albumPage: async ({ page, context }, use) => {
     await deleteAllAlbums(context);
-    await use(new AlbumPage(page));
+    const albumPageObj = new AlbumPage(page);
+    await use(albumPageObj);
+    await albumPageObj.deleteTrackedAlbums();
     await deleteAllAlbums(context);
   },
   a11yCheck: async ({ page }, use) => {
@@ -60,4 +66,16 @@ export const test = base.extend<Pages>({
     page.on('pageerror', (err) => errors.push(err));
     await use(errors);
   },
+  uploadedPhoto: [
+    async ({ uploadPage, context }, use) => {
+      const photoPath = createPath('test-assets', 'fixture-photo.jpg');
+      await uploadPage.navigateToUploadForm();
+      await uploadPage.uploadFiles(photoPath);
+      await uploadPage.waitForUploadComplete();
+      await uploadPage.waitForPhotoInLibrary();
+      await use({ uid: uploadPage.trackedUids[0] });
+      await deleteAllPhotos(context);
+    },
+    { scope: 'test' },
+  ],
 });

@@ -1,10 +1,11 @@
-import { type Page } from '@playwright/test';
+import { type Page, type Locator } from '@playwright/test';
 import { BASE_URL } from '../config.js';
 
 const selectors = {
   photo: {
     tile: '.is-photo',
     renderedTile: '.is-photo[data-uid]',
+    tileByUid: (uid: string) => `.is-photo[data-uid="${uid}"]`,
   },
   search: {
     input: 'Search',
@@ -38,16 +39,30 @@ export class LibraryPage {
     await this.page.locator(selectors.photo.renderedTile).first().waitFor({ timeout: 15000 });
   }
 
-  async selectFirstPhoto(): Promise<void> {
-    await this.page.locator(selectors.photo.renderedTile).first().waitFor({ timeout: 15000 });
-    await this.page.evaluate(() => {
-      const uid = document.querySelector('.is-photo[data-uid]')?.getAttribute('data-uid');
-      if (!uid) throw new Error('No photo tile with data-uid found');
+  getPhotoTile(uid: string): Locator {
+    return this.page.locator(selectors.photo.tileByUid(uid));
+  }
+
+  async selectPhoto(uid: string): Promise<void> {
+    await this.getPhotoTile(uid).waitFor({ timeout: 15000 });
+    await this.page.evaluate((targetUid: string) => {
       const appEl = document.querySelector('#app') as HTMLElement & {
         __vue_app__: { config: { globalProperties: { $clipboard: { toggle(m: { getId(): string }): boolean } } } };
       };
-      appEl.__vue_app__.config.globalProperties.$clipboard.toggle({ getId: () => uid });
-    });
+      appEl.__vue_app__.config.globalProperties.$clipboard.toggle({ getId: () => targetUid });
+    }, uid);
     await this.page.locator('.clipboard-container .action-menu').waitFor({ timeout: 15000 });
+  }
+
+  async clickPhoto(uid: string) {
+    await this.getPhotoTile(uid).click();
+  }
+
+  async waitForPhoto(uid: string, timeout = 15000) {
+    await this.getPhotoTile(uid).waitFor({ state: 'visible', timeout });
+  }
+
+  async waitForPhotoDisappearing(uid: string, timeout = 10000) {
+    await this.getPhotoTile(uid).waitFor({ state: 'hidden', timeout });
   }
 }
