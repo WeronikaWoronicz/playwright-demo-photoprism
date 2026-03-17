@@ -6,8 +6,8 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "lint": "eslint tests",
-    "lint:fix": "eslint tests --fix",
+    "lint": "eslint tests pages fixtures lib config.ts",
+    "lint:fix": "eslint tests pages fixtures lib config.ts --fix",
     "prettier": "pnpm exec prettier --check",
     "format": "pnpm run prettier:fix && pnpm run lint:fix",
     "check-types": "pnpm exec tsc --noEmit",

@@ -21,6 +21,10 @@ export default [
       '@typescript-eslint/no-floating-promises': 'error',
       'playwright/no-conditional-in-test': 'error',
       'playwright/no-conditional-expect': 'error',
+      'playwright/no-wait-for-timeout': 'error',
+      'playwright/no-force-option': 'warn',
+      'playwright/no-page-pause': 'error',
+      'playwright/no-element-handle': 'error',
     },
   },
   {
