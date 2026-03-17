@@ -74,15 +74,7 @@ export default defineConfig({
     {
       name: 'user-chromium',
       dependencies: ['user-setup'],
-      testIgnore: [
-        '**/admin/**',
-        '**/upload/**',
-        '**/photos/**',
-        '**/sharing/**',
-        '**/library/browse-filter-sort.spec.ts',
-        '**/library/search.spec.ts',
-        '**/api/api-photos.spec.ts',
-      ],
+      testIgnore: ['**/admin/**'],
       use: {
         browserName: 'chromium',
         storageState: `playwright/.auth/userState-worker-${process.env['TEST_PARALLEL_INDEX'] ?? '0'}.json`,
