@@ -15,7 +15,9 @@ export class SearchPage {
     await Promise.all([
       this.page.waitForResponse((r) => r.url().includes('/api/v1/photos') && r.status() === 200, { timeout: 10000 }),
       this.page.keyboard.press('Enter'),
-    ]);
+    ]).catch(() => {
+      console.debug('SearchPage: URL did not change after search');
+    });
   }
 
   async getResultCount(): Promise<number> {

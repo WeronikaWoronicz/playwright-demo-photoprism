@@ -1,10 +1,6 @@
 import { BrowserContext, Page } from '@playwright/test';
 import { BASE_URL } from '../config.js';
-
-async function getSessionToken(page: Page): Promise<string | undefined> {
-  const state = await page.context().storageState();
-  return state.origins.flatMap((o) => o.localStorage ?? []).find((item) => item.name === 'session.token')?.value;
-}
+import { getSessionToken, getSessionTokenFromContext } from './auth.js';
 
 export async function createAlbum(page: Page, name: string): Promise<string> {
   const token = await getSessionToken(page);
@@ -93,14 +89,7 @@ export async function triggerIndex(page: Page): Promise<void> {
 }
 
 export async function deleteAllPhotos(context: BrowserContext) {
-  const state = await context.storageState();
-  const sessionToken = state.origins
-    .flatMap((o) => o.localStorage ?? [])
-    .find((item) => item.name === 'session.token')?.value;
-
-  if (!sessionToken) {
-    return;
-  }
+  const sessionToken = await getSessionTokenFromContext(context);
 
   const reviewUIDs = await getAllPhotoUIDsViaContext(context, sessionToken, { review: true });
   if (reviewUIDs.length > 0) {
@@ -135,11 +124,7 @@ export async function deleteAllPhotos(context: BrowserContext) {
 
 export async function deletePhotosByUids(context: BrowserContext, uids: string[]): Promise<void> {
   if (uids.length === 0) return;
-  const state = await context.storageState();
-  const sessionToken = state.origins
-    .flatMap((o) => o.localStorage ?? [])
-    .find((item) => item.name === 'session.token')?.value;
-  if (!sessionToken) return;
+  const sessionToken = await getSessionTokenFromContext(context);
   const response = await context.request.post(`${BASE_URL}/api/v1/batch/photos/delete`, {
     data: { photos: uids },
     headers: { 'X-Auth-Token': sessionToken },
@@ -174,12 +159,7 @@ async function getAllPhotoUIDsViaContext(
 }
 
 export async function deleteAllAlbums(context: BrowserContext) {
-  const state = await context.storageState();
-  const sessionToken = state.origins
-    .flatMap((o) => o.localStorage ?? [])
-    .find((item) => item.name === 'session.token')?.value;
-
-  if (!sessionToken) return;
+  const sessionToken = await getSessionTokenFromContext(context);
 
   const response = await context.request.get(`${BASE_URL}/api/v1/albums`, {
     params: { count: 10000 },

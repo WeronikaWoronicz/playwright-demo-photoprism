@@ -104,7 +104,10 @@ export class UploadPage {
       .waitForResponse((resp) => resp.url().includes('/upload/') && resp.request().method() === 'POST', {
         timeout: 60000,
       })
-      .catch(() => null);
+      .catch(() => {
+        console.debug('UploadPage: upload response not captured (may have completed before listener)');
+        return null;
+      });
     const fileChooserPromise = this.page.waitForEvent('filechooser');
     await this.page.getByRole('button', { name: selectors.upload.browseButton }).click();
     const fileChooser = await fileChooserPromise;
@@ -131,7 +134,9 @@ export class UploadPage {
           data: { action: 'index' },
           headers: { 'X-Auth-Token': token },
         })
-        .catch(() => {});
+        .catch(() => {
+          console.debug('UploadPage: index trigger call failed, continuing');
+        });
     }
   }
 

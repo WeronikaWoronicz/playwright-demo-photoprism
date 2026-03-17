@@ -98,14 +98,19 @@ export class AlbumPage {
   }
 
   async deleteTrackedAlbums(): Promise<void> {
-    const token = await this.getAuthToken().catch(() => null);
+    const token = await this.getAuthToken().catch(() => {
+      console.warn('AlbumPage: auth token not found in storageState');
+      return null;
+    });
     if (!token || this._trackedAlbumUids.length === 0) return;
     for (const uid of this._trackedAlbumUids) {
       await this.page.request
         .delete(`${BASE_URL}/api/v1/albums/${uid}`, {
           headers: { 'X-Auth-Token': token },
         })
-        .catch(() => {});
+        .catch((_err: unknown) => {
+          console.warn(`AlbumPage: failed to delete album ${uid}, may already be deleted`);
+        });
     }
     this._trackedAlbumUids = [];
   }
