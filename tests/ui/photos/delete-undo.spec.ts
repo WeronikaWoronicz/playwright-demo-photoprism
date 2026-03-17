@@ -19,5 +19,9 @@ test.describe('Photo Delete', () => {
 
     await libraryPage.navigateToBrowse();
     await libraryPage.waitForPhotoDisappearing(uid);
+
+    await libraryPage.navigateToArchive();
+    await libraryPage.waitForPhoto(uid);
+    await expect(libraryPage.getPhotoTile(uid)).toBeVisible();
   });
 });

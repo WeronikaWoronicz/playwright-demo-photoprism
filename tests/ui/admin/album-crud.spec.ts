@@ -26,7 +26,7 @@ test.describe.serial('Album CRUD', () => {
     await albumPage.confirmCreate();
 
     await albumPage.navigateToAlbums();
-    await expect(page.locator('main')).toBeVisible();
+    await expect(page).toHaveURL(/albums/);
 
     const count = await albumPage.getAlbumCount();
     expect(count).toBeGreaterThanOrEqual(1);
@@ -35,7 +35,7 @@ test.describe.serial('Album CRUD', () => {
     expect(visible).toBe(true);
   });
 
-  test('TC-ALB-003 User can add photos to an album @P0', async ({ uploadPage, albumPage, libraryPage }) => {
+  test('TC-ALB-003 User can add photos to an album @P0', async ({ uploadPage, albumPage }) => {
     const albumName = albumPage.uniqueName('E2E Test Album');
     const albumUid = await albumPage.createAlbumViaAPI(albumName);
 
@@ -44,17 +44,17 @@ test.describe.serial('Album CRUD', () => {
     await uploadPage.waitForUploadComplete();
     await uploadPage.waitForPhotoInLibrary();
 
-    const photoUids = await libraryPage.getRenderedPhotoUids();
-    await albumPage.addPhotosToAlbumViaAPI(albumUid, photoUids.slice(0, 1));
+    const uploadedPhotoUid = uploadPage.trackedUids[0];
+    await albumPage.addPhotosToAlbumViaAPI(albumUid, [uploadedPhotoUid]);
 
     await expect
       .poll(
         async () => {
           const photos = await albumPage.getAlbumPhotosViaAPI(albumUid);
-          return photos.length;
+          return photos.map((p) => p.UID);
         },
         { timeout: 30000 }
       )
-      .toBeGreaterThanOrEqual(1);
+      .toContain(uploadedPhotoUid);
   });
 });

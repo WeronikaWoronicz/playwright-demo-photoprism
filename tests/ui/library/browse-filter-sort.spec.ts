@@ -7,7 +7,6 @@ test.describe('Library Browse and Sort', () => {
     await libraryPage.navigateToBrowse();
     await expect(page).toHaveURL(/library\/browse/);
     await expect(page.getByRole('textbox', { name: 'Search' })).toBeVisible();
-    await expect(page.locator('main')).toBeVisible();
   });
 
   test('TC-LIB-002 User sees uploaded photos in library @P0', async ({ uploadPage, libraryPage }) => {
