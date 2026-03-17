@@ -5,10 +5,7 @@ dotenv.config({
   path: `env/${process.env['NODE_ENV'] ? `${process.env['NODE_ENV']}.env` : `local.env`}`,
 });
 
-const workers = parseInt(
-  process.env['WORKER_COUNT'] ?? (process.env['PLAYWRIGHT_DOCKER_WORKERS'] === 'true' ? '4' : '1'),
-  10
-);
+const workers = parseInt(process.env['WORKER_COUNT'] ?? '4', 10);
 process.env['WORKER_COUNT'] = String(workers);
 
 export default defineConfig({
@@ -64,20 +61,6 @@ export default defineConfig({
       use: {
         browserName: 'chromium',
         storageState: `playwright/.auth/adminState-worker-${process.env['TEST_PARALLEL_INDEX'] ?? '0'}.json`,
-      },
-    },
-    {
-      name: 'user-setup',
-      testMatch: /user\.setup\.ts/,
-      dependencies: ['setup', 'cleanup'],
-    },
-    {
-      name: 'user-chromium',
-      dependencies: ['user-setup'],
-      testIgnore: ['**/admin/**'],
-      use: {
-        browserName: 'chromium',
-        storageState: `playwright/.auth/userState-worker-${process.env['TEST_PARALLEL_INDEX'] ?? '0'}.json`,
       },
     },
   ],
