@@ -26,14 +26,22 @@ setup('create user and authenticate', async ({ browser }) => {
 
       if (!adminToken) throw new Error('Could not obtain admin session token');
 
-      const createUserResponse = await adminContext.request.post(`${baseUrl}/api/v1/users`, {
+      const MAX_ATTEMPTS = 15;
+      let createUserResponse = await adminContext.request.post(`${baseUrl}/api/v1/users`, {
         headers: { 'X-Auth-Token': adminToken },
         data: { Name: username, Password: password, Role: 'user' },
       });
+      for (let attempt = 1; attempt < MAX_ATTEMPTS && createUserResponse.status() === 404; attempt++) {
+        await new Promise<void>((r) => setTimeout(r, 3000));
+        createUserResponse = await adminContext.request.post(`${baseUrl}/api/v1/users`, {
+          headers: { 'X-Auth-Token': adminToken },
+          data: { Name: username, Password: password, Role: 'user' },
+        });
+      }
 
       if (createUserResponse.status() === 404) {
         throw new Error(
-          `/api/v1/users returned 404 on worker ${i} — PhotoPrism version may not support user management`
+          `/api/v1/users returned 404 on worker ${i} after ${MAX_ATTEMPTS} attempts — PhotoPrism version may not support user management`
         );
       }
 

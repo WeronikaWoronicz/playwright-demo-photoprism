@@ -20,9 +20,10 @@ test.describe('Concurrent Edits', () => {
     const uid = uploadPage.trackedUids[0];
     expect(uid).toBeTruthy();
 
+    const workerIdx = parseInt(process.env['TEST_PARALLEL_INDEX'] ?? '0', 10);
     const [context1, context2] = await Promise.all([
-      browser.newContext({ storageState: getAdminAuthPath(test.info().workerIndex) }),
-      browser.newContext({ storageState: getAdminAuthPath(test.info().workerIndex) }),
+      browser.newContext({ storageState: getAdminAuthPath(workerIdx) }),
+      browser.newContext({ storageState: getAdminAuthPath(workerIdx) }),
     ]);
     const [page1, page2] = await Promise.all([context1.newPage(), context2.newPage()]);
 

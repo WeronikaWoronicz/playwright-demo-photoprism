@@ -1,6 +1,7 @@
 import { stopWorkerContainers, cleanupPortMap } from './docker-worker.js';
 import { existsSync, rmSync, readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
+import { execSync } from 'child_process';
 
 export default async function globalTeardown(): Promise<void> {
   if (process.env['PLAYWRIGHT_DOCKER_WORKERS'] !== 'true') {
@@ -25,7 +26,15 @@ export default async function globalTeardown(): Promise<void> {
     const prefixes = ['originals-worker-', 'storage-worker-', 'database-worker-'];
     for (const entry of readdirSync(sutDir)) {
       if (prefixes.some((p) => entry.startsWith(p))) {
-        rmSync(join(sutDir, entry), { recursive: true, force: true });
+        try {
+          rmSync(join(sutDir, entry), { recursive: true, force: true });
+        } catch {
+          try {
+            execSync(`docker run --rm -v "${join(sutDir, entry)}:/todel" alpine sh -c "rm -rf /todel"`, {
+              stdio: 'pipe',
+            });
+          } catch {}
+        }
       }
     }
   }
