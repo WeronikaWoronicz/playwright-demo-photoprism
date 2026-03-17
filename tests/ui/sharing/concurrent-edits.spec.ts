@@ -59,8 +59,9 @@ test.describe('Concurrent Edits', () => {
     const token = state.origins
       .flatMap((o) => o.localStorage ?? [])
       .find((item) => item.name.endsWith('session.token'))?.value;
+    expect(token, 'session token not found in storageState').toBeTruthy();
     const resp = await page.request.get(`${BASE_URL}/api/v1/photos/${uid}`, {
-      headers: { 'X-Auth-Token': token ?? '' },
+      headers: { 'X-Auth-Token': token! },
     });
     const updatedPhoto = (await resp.json()) as { UID: string; Title: string };
     expect(updatedPhoto.Title).toBe('Title From User 2');
@@ -70,6 +71,7 @@ test.describe('Concurrent Edits', () => {
     const tile = libraryPageMain.getPhotoTile(uid);
     await tile.waitFor({ state: 'visible', timeout: 15000 });
     const box = await tile.boundingBox();
+    expect(box, 'photo tile bounding box is null').not.toBeNull();
     await expect(page).toHaveScreenshot('photo-tile-last-write-wins.png', {
       clip: { x: box!.x, y: box!.y, width: 300, height: 388 },
     });

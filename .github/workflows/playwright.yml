@@ -133,6 +133,7 @@ jobs:
         run: pnpm exec playwright test --update-snapshots
         env:
           BASE_URL: http://localhost:2342
+          WORKER_COUNT: '1'
           PHOTOPRISM_USERNAME: ${{ secrets.PHOTOPRISM_USERNAME }}
           PHOTOPRISM_PASSWORD: ${{ secrets.PHOTOPRISM_PASSWORD }}
 

@@ -1,9 +1,12 @@
-import { execSync } from 'child_process';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { writeFileSync, unlinkSync, existsSync } from 'fs';
 import * as http from 'http';
 import { join } from 'path';
 
-export type WorkerPortMap = Record<number, number>;
+const execAsync = promisify(exec);
+
+export type WorkerPortMap = Record<string, number>;
 
 const BASE_PORT = 12342;
 const composePath = join(process.cwd(), 'sut', 'compose.worker.yml');
@@ -11,18 +14,15 @@ const composePath = join(process.cwd(), 'sut', 'compose.worker.yml');
 export async function startWorkerContainers(workerCount: number): Promise<WorkerPortMap> {
   const portMap: WorkerPortMap = {};
   for (let i = 0; i < workerCount; i++) {
-    portMap[i] = BASE_PORT + i;
+    portMap[String(i)] = BASE_PORT + i;
   }
 
   await Promise.all(
     Array.from({ length: workerCount }, (_, i) => {
-      const port = portMap[i] as number;
-      return Promise.resolve(
-        execSync(`docker compose -f "${composePath}" -p pw-worker-${i} up -d`, {
-          stdio: 'pipe',
-          env: { ...process.env, WORKER_INDEX: String(i), WORKER_PORT: String(port) },
-        })
-      );
+      const port = portMap[String(i)] as number;
+      return execAsync(`docker compose -f "${composePath}" -p pw-worker-${i} up -d`, {
+        env: { ...process.env, WORKER_INDEX: String(i), WORKER_PORT: String(port) },
+      });
     })
   );
 
@@ -32,14 +32,20 @@ export async function startWorkerContainers(workerCount: number): Promise<Worker
 export async function stopWorkerContainers(workerCount: number): Promise<void> {
   await Promise.all(
     Array.from({ length: workerCount }, (_, i) =>
-      Promise.resolve().then(() => {
-        try {
-          execSync(`docker compose -f "${composePath}" -p pw-worker-${i} down -v`, {
-            stdio: 'pipe',
-          });
-        } catch {}
-      })
+      execAsync(`docker compose -f "${composePath}" -p pw-worker-${i} down -v`).catch(() => {})
     )
+  );
+}
+
+export async function stopAllKnownWorkers(): Promise<void> {
+  let names: string[] = [];
+  try {
+    const { stdout } = await execAsync('docker compose ls --format json --all');
+    const projects = JSON.parse(stdout) as Array<{ Name: string }>;
+    names = projects.map((p) => p.Name).filter((n) => /^pw-worker-\d+$/.test(n));
+  } catch {}
+  await Promise.all(
+    names.map((name) => execAsync(`docker compose -f "${composePath}" -p "${name}" down -v`).catch(() => {}))
   );
 }
 

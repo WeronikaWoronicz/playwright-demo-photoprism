@@ -10,10 +10,13 @@ setup('authenticate as admin', async ({ browser }) => {
   for (let i = 0; i < workerCount; i++) {
     const baseUrl = getWorkerBaseUrl(i);
     const context = await browser.newContext();
-    await loginViaAPI(photoprism.username, photoprism.password, context, baseUrl);
-    const page = await context.newPage();
-    await page.goto(baseUrl);
-    await context.storageState({ path: getAdminAuthPath(i) });
-    await context.close();
+    try {
+      await loginViaAPI(photoprism.username, photoprism.password, context, baseUrl);
+      const page = await context.newPage();
+      await page.goto(baseUrl);
+      await context.storageState({ path: getAdminAuthPath(i) });
+    } finally {
+      await context.close();
+    }
   }
 });

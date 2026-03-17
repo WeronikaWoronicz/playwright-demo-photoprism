@@ -13,39 +13,45 @@ setup('create user and authenticate', async ({ browser }) => {
   for (let i = 0; i < workerCount; i++) {
     const baseUrl = getWorkerBaseUrl(i);
     const adminContext = await browser.newContext();
-    await loginViaAPI(photoprism.username, photoprism.password, adminContext, baseUrl);
-    const adminPage = await adminContext.newPage();
-    await adminPage.goto(baseUrl);
+    try {
+      await loginViaAPI(photoprism.username, photoprism.password, adminContext, baseUrl);
+      const adminPage = await adminContext.newPage();
+      await adminPage.goto(baseUrl);
 
-    const adminToken = await adminPage.evaluate(() => {
-      const keys = Object.keys(localStorage);
-      const tokenKey = keys.find((k) => k.endsWith('session.token'));
-      return tokenKey ? localStorage.getItem(tokenKey) : null;
-    });
+      const adminToken = await adminPage.evaluate(() => {
+        const keys = Object.keys(localStorage);
+        const tokenKey = keys.find((k) => k.endsWith('session.token'));
+        return tokenKey ? localStorage.getItem(tokenKey) : null;
+      });
 
-    if (!adminToken) throw new Error('Could not obtain admin session token');
+      if (!adminToken) throw new Error('Could not obtain admin session token');
 
-    const createUserResponse = await adminContext.request.post(`${baseUrl}/api/v1/users`, {
-      headers: { 'X-Auth-Token': adminToken },
-      data: { Name: username, Password: password, Role: 'user' },
-    });
+      const createUserResponse = await adminContext.request.post(`${baseUrl}/api/v1/users`, {
+        headers: { 'X-Auth-Token': adminToken },
+        data: { Name: username, Password: password, Role: 'user' },
+      });
 
-    if (createUserResponse.status() === 404) {
-      await adminContext.storageState({ path: getUserAuthPath(i) });
+      if (createUserResponse.status() === 404) {
+        throw new Error(
+          `/api/v1/users returned 404 on worker ${i} — PhotoPrism version may not support user management`
+        );
+      }
+
+      if (createUserResponse.status() !== 201 && createUserResponse.status() !== 409) {
+        throw new Error(`Unexpected response from user creation API: ${createUserResponse.status()}`);
+      }
+
+      const userContext = await browser.newContext();
+      try {
+        await loginViaAPI(username, password, userContext, baseUrl);
+        const userPage = await userContext.newPage();
+        await userPage.goto(baseUrl);
+        await userContext.storageState({ path: getUserAuthPath(i) });
+      } finally {
+        await userContext.close();
+      }
+    } finally {
       await adminContext.close();
-      continue;
     }
-
-    if (createUserResponse.status() !== 201 && createUserResponse.status() !== 409) {
-      throw new Error(`Unexpected response from user creation API: ${createUserResponse.status()}`);
-    }
-
-    const userContext = await browser.newContext();
-    await loginViaAPI(username, password, userContext, baseUrl);
-    const userPage = await userContext.newPage();
-    await userPage.goto(baseUrl);
-    await userContext.storageState({ path: getUserAuthPath(i) });
-    await userContext.close();
-    await adminContext.close();
   }
 });

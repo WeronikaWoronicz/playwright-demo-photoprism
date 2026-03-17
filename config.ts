@@ -28,7 +28,7 @@ export function getWorkerBaseUrl(workerIndex: number): string {
 function resolveBaseUrl(): string {
   const portMap = readPortMap();
   if (portMap) {
-    const port = portMap[process.env['TEST_WORKER_INDEX'] ?? '0'];
+    const port = portMap[process.env['TEST_PARALLEL_INDEX'] ?? '0'];
     if (port) return `http://127.0.0.1:${port}`;
   }
   return get_from_env_or_throw('BASE_URL');

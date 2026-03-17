@@ -1,5 +1,5 @@
 import type { FullConfig } from '@playwright/test';
-import { startWorkerContainers, stopWorkerContainers, waitForHealthy, writePortMap } from './docker-worker.js';
+import { startWorkerContainers, stopAllKnownWorkers, waitForHealthy, writePortMap } from './docker-worker.js';
 
 export default async function globalSetup(config: FullConfig): Promise<void> {
   if (process.env['PLAYWRIGHT_DOCKER_WORKERS'] !== 'true') {
@@ -8,12 +8,10 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 
   const workerCount = config.workers ?? 4;
   if (workerCount < 4) {
-    console.warn(`Warning: WORKER_COUNT=${workerCount} — recommended minimum is 4 for meaningful parallel isolation`);
+    console.warn(`Warning: workers=${workerCount} — recommended minimum is 4 for meaningful parallel isolation`);
   }
 
-  try {
-    await stopWorkerContainers(workerCount);
-  } catch {}
+  await stopAllKnownWorkers();
 
   const portMap = await startWorkerContainers(workerCount);
   writePortMap(portMap);
