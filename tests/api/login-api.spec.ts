@@ -1,7 +1,7 @@
-import { test } from '../../../fixtures/pages.js';
+import { test } from '../../fixtures/pages.js';
 import { expect } from '@playwright/test';
-import { BASE_URL, photoprism } from '../../../config.js';
-import { loginViaAPI } from '../../../lib/auth.js';
+import { BASE_URL, photoprism } from '../../config.js';
+import { loginViaAPI } from '../../lib/auth.js';
 
 test.describe('API Login', () => {
   test.use({ storageState: { cookies: [], origins: [] } });

@@ -4,12 +4,13 @@ import { BASE_URL } from '../../../config.js';
 import { checkA11y } from '../../../lib/accessibility.js';
 
 test.describe('Accessibility Smoke Tests', () => {
-  test('TC-A11Y-001 User sees no critical a11y violations on login page @P1', async ({ browser }) => {
-    const ctx = await browser.newContext({ storageState: { cookies: [], origins: [] } });
-    const unauthPage = await ctx.newPage();
-    await unauthPage.goto(BASE_URL + '/library/login');
-    await checkA11y(unauthPage);
-    await ctx.close();
+  test.describe('login page (unauthenticated)', () => {
+    test.use({ storageState: { cookies: [], origins: [] } });
+
+    test('TC-A11Y-001 User sees no critical a11y violations on login page @P1', async ({ page }) => {
+      await page.goto(BASE_URL + '/library/login');
+      await checkA11y(page);
+    });
   });
 
   test('TC-A11Y-002 User sees no critical a11y violations on library browse page @P1', async ({
