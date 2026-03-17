@@ -39,7 +39,9 @@ export async function deleteAlbum(page: Page, uid: string): Promise<void> {
     .delete(`${BASE_URL}/api/v1/albums/${uid}`, {
       headers: { 'X-Auth-Token': token },
     })
-    .catch(() => {});
+    .catch(() => {
+      console.warn(`photoprism-api: album deletion failed for ${uid}`);
+    });
 }
 
 export async function getPhotoUidsByFilenameTag(
