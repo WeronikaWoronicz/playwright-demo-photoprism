@@ -12,10 +12,10 @@ services:
     ports:
       - '${WORKER_PORT}:2342'
     environment:
-      PHOTOPRISM_ADMIN_USER: 'admin'
-      PHOTOPRISM_ADMIN_PASSWORD: 'insecure'
+      PHOTOPRISM_ADMIN_USER: '${PHOTOPRISM_ADMIN_USER:-admin}'
+      PHOTOPRISM_ADMIN_PASSWORD: '${PHOTOPRISM_ADMIN_PASSWORD:-insecure}'
       PHOTOPRISM_AUTH_MODE: 'password'
-      PHOTOPRISM_SITE_URL: 'http://localhost:2342/'
+      PHOTOPRISM_SITE_URL: 'http://localhost:${WORKER_PORT}/'
       PHOTOPRISM_DISABLE_TLS: 'false'
       PHOTOPRISM_DEFAULT_TLS: 'true'
       PHOTOPRISM_ORIGINALS_LIMIT: 5000
