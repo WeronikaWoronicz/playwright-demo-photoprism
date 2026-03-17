@@ -2,7 +2,6 @@ import { type Page, expect } from '@playwright/test';
 
 const selectors = {
   photo: {
-    editTitleButton: '.action-title-edit',
     titleInput: 'Title',
   },
 };
@@ -50,8 +49,8 @@ export class PhotoDetailPage {
   }
 
   async archiveSelectedPhoto() {
-    await this.page.locator('.clipboard-container .action-menu').click();
-    await this.page.locator('.clipboard-container .action-archive').click();
+    await this.page.getByRole('button', { name: /photo actions/i }).click();
+    await this.page.getByRole('button', { name: /archive/i }).click();
   }
 
   async rotatePhoto() {
