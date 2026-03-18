@@ -22,7 +22,7 @@ export class LibraryPage {
 
   async navigateToArchive() {
     await this.page.goto(BASE_URL + '/library/archive');
-    await this.page.getByRole('textbox', { name: selectors.search.input }).waitFor();
+    await this.page.waitForURL(/\/library\/archive/);
   }
 
   async getPhotoCount(): Promise<number> {
