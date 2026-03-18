@@ -52,7 +52,7 @@ export class LibraryPage {
     const tile = this.getPhotoTile(uid);
     await tile.waitFor({ timeout: 15000 });
     await tile.locator('.input-select').click();
-    await this.page.getByRole('button', { name: /photo actions/i }).waitFor({ timeout: 15000 });
+    await this.page.locator('.clipboard-container .action-menu').waitFor({ timeout: 15000 });
   }
 
   async clickPhoto(uid: string) {
