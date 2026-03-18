@@ -67,12 +67,7 @@ export class UploadPage {
   }
 
   private async openUploadMenu() {
-    await this.page.locator('a.nav-upload').waitFor({ state: 'attached', timeout: 15000 });
-    await this.page.evaluate(() => {
-      const link = document.querySelector('a.nav-upload') as HTMLElement | null;
-      if (!link) throw new Error('Upload link not found in navigation');
-      link.click();
-    });
+    await this.page.getByRole('link', { name: /upload/i }).click();
     await this.page.getByRole('button', { name: selectors.upload.browseButton }).waitFor({ timeout: 10000 });
   }
 
