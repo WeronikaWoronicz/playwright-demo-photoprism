@@ -19,8 +19,7 @@ export class AlbumPage {
 
   async navigateToAlbums() {
     await this.page.goto(BASE_URL + ALBUMS_PATH);
-    await this.page.locator('.p-page__content').waitFor({ state: 'visible', timeout: 15000 });
-    await this.page.getByTitle('Add Album').waitFor({ state: 'visible', timeout: 5000 });
+    await this.page.getByTitle('Add Album').waitFor({ state: 'visible', timeout: 15000 });
   }
 
   async clickAddAlbum() {
@@ -30,7 +29,6 @@ export class AlbumPage {
     await this.page.getByTitle('Add Album').click();
     await albumCreated;
     await this.page.reload();
-    await this.page.locator('.p-page__content').waitFor({ state: 'visible', timeout: 15000 });
     await this.page.locator('.action-title-edit').first().waitFor({ state: 'visible', timeout: 15000 });
   }
 

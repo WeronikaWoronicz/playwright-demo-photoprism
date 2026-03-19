@@ -52,7 +52,14 @@ export class PhotoDetailPage {
   }
 
   async rotatePhoto() {
-    await this.page.getByRole('row', { name: 'Orientation' }).getByRole('combobox').first().click();
-    await this.page.getByRole('option', { name: '90°' }).click();
+    await Promise.all([
+      this.page.waitForResponse((resp) => resp.url().includes('/api/v1/photos/') && resp.request().method() === 'PUT', {
+        timeout: 30000,
+      }),
+      (async () => {
+        await this.page.getByRole('row', { name: 'Orientation' }).getByRole('combobox').first().click();
+        await this.page.getByRole('option', { name: '90°' }).click();
+      })(),
+    ]);
   }
 }

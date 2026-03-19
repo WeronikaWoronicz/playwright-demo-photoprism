@@ -22,13 +22,7 @@ test.describe('Photo Image Operations', () => {
 
     await page.getByRole('tab', { name: /files/i }).click();
 
-    const saveResponsePromise = page.waitForResponse(
-      (resp) => resp.url().includes('/api/v1/photos/') && resp.request().method() === 'PUT',
-      { timeout: 15000 }
-    );
-
     await photoDetailPage.rotatePhoto();
-    await saveResponsePromise;
 
     await page.goto(BASE_URL + '/library/browse');
     const tile = libraryPage.getPhotoTile(uid);
