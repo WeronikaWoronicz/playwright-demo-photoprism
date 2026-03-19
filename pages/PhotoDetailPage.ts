@@ -19,9 +19,11 @@ export class PhotoDetailPage {
   async openEditPanel(uid?: string) {
     const effectiveUid = uid ?? this._lastOpenedUid;
     if (!effectiveUid) throw new Error('openEditPanel requires a uid or a prior openPhoto() call');
-    const tile = this.page.locator(`.is-photo[data-uid="${effectiveUid}"]`);
-    await tile.waitFor({ state: 'visible', timeout: 15000 });
-    await tile.getByRole('button', { name: /edit details/i }).click();
+    await this.page.locator(`.is-photo[data-uid="${effectiveUid}"]`).waitFor({ state: 'visible', timeout: 15000 });
+    await this.page.evaluate(
+      (uid) => (document.querySelector(`.is-photo[data-uid="${uid}"] .action-title-edit`) as HTMLElement).click(),
+      effectiveUid
+    );
     await this.page.getByRole('tab', { name: /details/i }).waitFor({ timeout: 15000 });
   }
 
@@ -45,8 +47,8 @@ export class PhotoDetailPage {
   }
 
   async archiveSelectedPhoto() {
-    await this.page.getByRole('button', { name: /photo actions/i }).click();
-    await this.page.getByRole('button', { name: /archive/i }).click();
+    await this.page.locator('.clipboard-container .action-menu').click();
+    await this.page.locator('.clipboard-container .action-archive').click();
   }
 
   async rotatePhoto() {

@@ -17,10 +17,6 @@ export class AdminPage {
     await this.page.goto(BASE_URL + selectors.settings.path);
   }
 
-  async navigateToMaintenance() {
-    await this.page.goto(BASE_URL + '/library/maintenance');
-  }
-
   async isAccessDenied(): Promise<boolean> {
     const url = this.page.url();
     const urlDenied = url.includes('login') || url.includes('403');

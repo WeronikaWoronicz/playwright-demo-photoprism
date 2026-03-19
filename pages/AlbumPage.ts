@@ -19,28 +19,32 @@ export class AlbumPage {
 
   async navigateToAlbums() {
     await this.page.goto(BASE_URL + ALBUMS_PATH);
-    await this.page.getByRole('button', { name: /add album/i }).waitFor({ state: 'visible', timeout: 15000 });
+    await this.page.locator('.p-page__content').waitFor({ state: 'visible', timeout: 15000 });
+    await this.page.getByTitle('Add Album').waitFor({ state: 'visible', timeout: 5000 });
   }
 
   async clickAddAlbum() {
-    await this.page.getByRole('button', { name: /add album/i }).click();
-    await this.page.getByTestId('album-item').first().waitFor({ state: 'visible', timeout: 10000 });
+    const albumCreated = this.page.waitForResponse(
+      (resp) => resp.url().includes('/api/v1/albums') && resp.request().method() === 'POST'
+    );
+    await this.page.getByTitle('Add Album').click();
+    await albumCreated;
+    await this.page.reload();
+    await this.page.locator('.p-page__content').waitFor({ state: 'visible', timeout: 15000 });
+    await this.page.locator('.action-title-edit').first().waitFor({ state: 'visible', timeout: 15000 });
   }
 
   async typeAlbumName(name: string) {
-    await this.page
-      .getByRole('button', { name: /edit title/i })
-      .first()
-      .click();
-    await this.page.getByLabel(/album title/i).fill(name);
+    await this.page.locator('.action-title-edit').first().click();
+    await this.page.locator('.input-title input').fill(name);
   }
 
   async confirmCreate() {
-    await this.page.getByRole('button', { name: /confirm/i }).click();
+    await this.page.locator('.action-confirm').click();
   }
 
   async getAlbumTitles(): Promise<string[]> {
-    const titles = this.page.getByTestId('album-item').getByRole('button', { name: /edit title/i });
+    const titles = this.page.locator('.result.not-selectable .action-title-edit');
     return titles.allTextContents();
   }
 
@@ -50,7 +54,7 @@ export class AlbumPage {
   }
 
   async getAlbumCount(): Promise<number> {
-    return this.page.getByTestId('album-item').count();
+    return this.page.locator('.result.not-selectable').count();
   }
 
   async createAlbumViaAPI(name: string): Promise<string> {

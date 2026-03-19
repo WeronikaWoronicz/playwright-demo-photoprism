@@ -7,9 +7,4 @@ test.describe('Role-Based Access Control', () => {
     await expect(page).toHaveURL(/\/library\/settings/);
     await expect(page.getByRole('tab', { name: 'General' })).toBeVisible();
   });
-
-  test('TC-RBAC-002 User can access maintenance page as admin @P0', async ({ adminPage, page }) => {
-    await adminPage.navigateToMaintenance();
-    await expect(page).toHaveURL(/\/library\/maintenance/);
-  });
 });

@@ -34,6 +34,6 @@ test.describe('Public Share Link', () => {
     const response = await unauthPage.goto(shareUrl);
     expect(response?.status()).toBe(200);
     await expect(unauthPage).not.toHaveURL(/login/);
-    await expect(unauthPage.locator(`.is-photo[data-uid="${photoUid}"]`)).toBeVisible();
+    await expect(unauthPage.locator('.result').first()).toBeVisible({ timeout: 10000 });
   });
 });

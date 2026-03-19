@@ -23,7 +23,42 @@ diff --git a/frontend/src/component/navigation.vue b/frontend/src/component/navi
 index 0027fb9ad..c738f9c9d 100644
 --- a/frontend/src/component/navigation.vue
 +++ b/frontend/src/component/navigation.vue
-@@ -705,6 +705,7 @@
+@@ -83,5 +83,34 @@
+               <v-icon :icon="rtl ? 'mdi-chevron-left' : 'mdi-chevron-right'" class="ma-auto"></v-icon>
+             </v-list-item>
+ 
++            <v-list-item
++              v-if="isMini && auth && !config.readonly && $config.feature('upload')"
++              variant="text"
++              class="nav-upload"
++              role="button"
++              :aria-label="$gettext('Upload photos')"
++              :ripple="false"
++              @click.stop="openUpload()"
++            >
++              <v-icon class="ma-auto">mdi-cloud-upload</v-icon>
++            </v-list-item>
++
++            <v-list-item
++              v-else-if="!isMini && auth && !config.readonly && $config.feature('upload')"
++              variant="text"
++              class="nav-upload"
++              role="button"
++              :aria-label="$gettext('Upload')"
++              :ripple="false"
++              @click.stop="openUpload()"
++            >
++              <v-list-item-title class="nav-menu-item">
++                <v-icon>mdi-cloud-upload</v-icon>
++                <p class="nav-item-title">
++                  {{ $gettext(`Upload`) }}
++                </p>
++              </v-list-item-title>
++            </v-list-item>
++
+             <v-list-item v-if="isMini && $config.feature('search')" to="/browse" variant="text" class="nav-browse" :ripple="false" @click.stop="">
+               <v-icon class="ma-auto">mdi-magnify</v-icon>
+@@ -705,6 +734,7 @@
              href="#"
              :title="$gettext('Upload')"
              class="menu-action nav-upload"

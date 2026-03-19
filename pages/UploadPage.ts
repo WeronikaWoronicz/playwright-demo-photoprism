@@ -67,7 +67,8 @@ export class UploadPage {
   }
 
   private async openUploadMenu() {
-    await this.page.getByRole('link', { name: /upload/i }).click();
+    await this.page.locator('a.nav-upload').waitFor({ state: 'attached', timeout: 10000 });
+    await this.page.evaluate(() => (document.querySelector('a.nav-upload') as HTMLElement).click());
     await this.page.getByRole('button', { name: selectors.upload.browseButton }).waitFor({ timeout: 10000 });
   }
 
@@ -121,22 +122,6 @@ export class UploadPage {
     if (this._uploadProcessingPromise) {
       await this._uploadProcessingPromise;
       this._uploadProcessingPromise = null;
-    }
-    let token: string | undefined;
-    try {
-      token = await getSessionToken(this.page);
-    } catch {
-      // Token not available, skip index trigger
-    }
-    if (token) {
-      this.page.request
-        .post(`${BASE_URL}/api/v1/index`, {
-          data: { action: 'index' },
-          headers: { 'X-Auth-Token': token },
-        })
-        .catch(() => {
-          console.debug('UploadPage: index trigger call failed, continuing');
-        });
     }
   }
 

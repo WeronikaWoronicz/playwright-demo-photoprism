@@ -51,8 +51,16 @@ export class LibraryPage {
   async selectPhoto(uid: string): Promise<void> {
     const tile = this.getPhotoTile(uid);
     await tile.waitFor({ timeout: 15000 });
-    await tile.locator('.input-select').click();
-    await this.page.getByRole('button', { name: /photo actions/i }).waitFor({ timeout: 15000 });
+    await tile.hover();
+    await this.page.evaluate((uid) => {
+      const preview = document.querySelector(`.is-photo[data-uid="${uid}"] .preview`) as HTMLElement;
+      const btn = document.querySelector(`.is-photo[data-uid="${uid}"] .input-select`) as HTMLElement;
+      if (preview && btn) {
+        preview.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+        btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      }
+    }, uid);
+    await this.page.locator('.clipboard-container .action-menu').waitFor({ timeout: 15000 });
   }
 
   async clickPhoto(uid: string) {

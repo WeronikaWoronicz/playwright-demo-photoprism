@@ -16,20 +16,34 @@ export async function createAlbum(page: Page, name: string): Promise<string> {
 export async function addPhotosToAlbum(page: Page, albumUid: string, photoUids: string[]): Promise<void> {
   const token = await getSessionToken(page);
   if (!token) throw new Error('No session token');
-  await page.request.post(`${BASE_URL}/api/v1/albums/${albumUid}/photos`, {
+  const resp = await page.request.post(`${BASE_URL}/api/v1/albums/${albumUid}/photos`, {
     headers: { 'X-Auth-Token': token },
     data: { photos: photoUids },
   });
+  if (!resp.ok()) throw new Error(`addPhotosToAlbum failed with status ${resp.status()}`);
 }
 
 export async function getAlbumPhotos(page: Page, albumUid: string): Promise<Array<{ UID: string }>> {
   const token = await getSessionToken(page);
   if (!token) throw new Error('No session token');
-  const resp = await page.request.get(`${BASE_URL}/api/v1/photos`, {
-    params: { count: 1000, album: albumUid },
-    headers: { 'X-Auth-Token': token },
+  const [libResp, revResp] = await Promise.all([
+    page.request.get(`${BASE_URL}/api/v1/photos`, {
+      params: { count: 1000, album: albumUid },
+      headers: { 'X-Auth-Token': token },
+    }),
+    page.request.get(`${BASE_URL}/api/v1/photos`, {
+      params: { count: 1000, album: albumUid, review: true },
+      headers: { 'X-Auth-Token': token },
+    }),
+  ]);
+  const libPhotos: Array<{ UID: string }> = libResp.ok() ? ((await libResp.json()) as Array<{ UID: string }>) : [];
+  const revPhotos: Array<{ UID: string }> = revResp.ok() ? ((await revResp.json()) as Array<{ UID: string }>) : [];
+  const seen = new Set<string>();
+  return [...libPhotos, ...revPhotos].filter((p) => {
+    if (seen.has(p.UID)) return false;
+    seen.add(p.UID);
+    return true;
   });
-  return resp.json();
 }
 
 export async function deleteAlbum(page: Page, uid: string): Promise<void> {
