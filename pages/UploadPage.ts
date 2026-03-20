@@ -170,8 +170,25 @@ export class UploadPage {
         data: { photos: ownReviewUids },
         headers: { 'X-Auth-Token': token },
       });
+      // After approval, poll until photos appear in library (not review) to ensure indexing
+      await expect
+        .poll(
+          async () => {
+            const libResp = await this.page.request.get(`${BASE_URL}/api/v1/photos`, {
+              params: { count: 100, offset: 0 },
+              headers: { 'X-Auth-Token': token },
+            });
+            const libPhotos = libResp.ok()
+              ? ((await libResp.json()) as Array<{ UID: string; OriginalName?: string }>)
+              : [];
+            const found = libPhotos.filter((p) => p.OriginalName?.includes(this._uniqueTag));
+            return found.length;
+          },
+          { timeout: 60000 }
+        )
+        .toBeGreaterThanOrEqual(effectiveMinCount);
     }
-    const allNewUids = [...new Set([...ownReviewUids, ...ownLibraryUids])];
+    const allNewUids = [...new Set([...ownLibraryUids, ...ownReviewUids])];
     this._trackedUids = [...new Set([...this._trackedUids, ...allNewUids])];
     await this.page.goto(`${BASE_URL}/library/browse`);
     for (const uid of allNewUids) {

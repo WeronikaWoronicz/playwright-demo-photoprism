@@ -143,11 +143,19 @@ export async function deleteAllPhotos(context: BrowserContext) {
 export async function deletePhotosByUids(context: BrowserContext, uids: string[]): Promise<void> {
   if (uids.length === 0) return;
   const sessionToken = await getSessionTokenFromContext(context);
-  const response = await context.request.post(`${BASE_URL}/api/v1/batch/photos/delete`, {
-    data: { photos: uids },
-    headers: { 'X-Auth-Token': sessionToken },
-  });
-  if (!response.ok() && response.status() !== 400 && response.status() !== 404) {
+  // Retry up to 3 times with exponential backoff for 500 errors during cleanup
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const response = await context.request.post(`${BASE_URL}/api/v1/batch/photos/delete`, {
+      data: { photos: uids },
+      headers: { 'X-Auth-Token': sessionToken },
+    });
+    if (response.ok() || response.status() === 400 || response.status() === 404) {
+      return;
+    }
+    if (response.status() >= 500 && attempt < 3) {
+      await new Promise((r) => setTimeout(r, attempt * 1000));
+      continue;
+    }
     throw new Error(`Failed to delete photos by UIDs: ${response.status()}`);
   }
 }
