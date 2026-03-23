@@ -35,7 +35,10 @@ export class LibraryPage {
   }
 
   async setSortOrder(order: 'newest' | 'oldest') {
-    await this.page.goto(BASE_URL + '/library/browse?order=' + order);
+    await Promise.all([
+      this.page.waitForResponse((r) => r.url().includes('/api/v1/photos') && r.status() === 200, { timeout: 15000 }),
+      this.page.goto(BASE_URL + '/library/browse?order=' + order),
+    ]);
     await this.waitForPhotos();
   }
 
