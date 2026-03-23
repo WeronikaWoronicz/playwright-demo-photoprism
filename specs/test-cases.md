@@ -667,10 +667,10 @@
 
 ### TC-ALB-001 — Create album through UI (P0)
 
-| | |
-|---|---|
+|                  |                     |
+| ---------------- | ------------------- |
 | **Precondition** | Authenticated admin |
-| **Fixture** | `albumPage`, `page` |
+| **Fixture**      | `albumPage`, `page` |
 
 **Steps:**
 
@@ -691,10 +691,10 @@
 
 ### TC-ALB-002 — Created album appears on albums page (P0)
 
-| | |
-|---|---|
+|                  |                                                                                  |
+| ---------------- | -------------------------------------------------------------------------------- |
 | **Precondition** | Authenticated admin, album created in TC-ALB-001 (or use `test.describe.serial`) |
-| **Fixture** | `albumPage`, `page` |
+| **Fixture**      | `albumPage`, `page`                                                              |
 
 **Steps:**
 
@@ -709,10 +709,10 @@
 
 ### TC-ALB-003 — Add photos to album through UI (P0)
 
-| | |
-|---|---|
+|                  |                                                                |
+| ---------------- | -------------------------------------------------------------- |
 | **Precondition** | Authenticated admin, at least 1 photo in library, album exists |
-| **Fixture** | `uploadPage`, `albumPage`, `libraryPage`, `page` |
+| **Fixture**      | `uploadPage`, `albumPage`, `libraryPage`, `page`               |
 
 **Steps:**
 
@@ -736,10 +736,10 @@
 
 ### TC-ALB-004 — Delete album through UI (P1)
 
-| | |
-|---|---|
+|                  |                                                  |
+| ---------------- | ------------------------------------------------ |
 | **Precondition** | Authenticated admin, album exists in albums list |
-| **Fixture** | `albumPage`, `page` |
+| **Fixture**      | `albumPage`, `page`                              |
 
 **Steps:**
 
@@ -759,10 +759,10 @@
 
 ### TC-ALB-005 — Rename album through UI (P2)
 
-| | |
-|---|---|
+|                  |                                   |
+| ---------------- | --------------------------------- |
 | **Precondition** | Authenticated admin, album exists |
-| **Fixture** | `albumPage`, `page` |
+| **Fixture**      | `albumPage`, `page`               |
 
 **Steps:**
 
@@ -774,8 +774,7 @@
 
 **Expected Result:** Album rename persists and is visible in the list.
 
-**Page object gap:** `AlbumPage` needs: `renameAlbum(oldName, newName)`.
----
+## **Page object gap:** `AlbumPage` needs: `renameAlbum(oldName, newName)`.
 
 ## 12. Photo Detail — Edit Metadata
 
@@ -796,7 +795,7 @@
 2. Navigate to library, wait for photos.
 3. Get first rendered photo UID via `libraryPage.getRenderedPhotoUids()`.
 4. Open photo via `photoDetailPage.openPhoto(uid)`.
-5. Open edit panel via `photoDetailPage.openEditPanel()`.
+5. Open edit panel via `photoDetailPage.openEditPanelFromCache()`.
 6. Generate test metadata via `generatePhotoMetadata(42)` for deterministic data.
 7. Edit title via `photoDetailPage.editTitle(metadata.title)`.
 8. Save changes via `photoDetailPage.saveChanges()`.

@@ -1,7 +1,7 @@
-import { test } from '../../../fixtures/pages.js';
+import { test } from '../../fixtures/pages.js';
 import { expect } from '@playwright/test';
-import { BASE_URL, photoprism } from '../../../config.js';
-import { loginViaAPI } from '../../../lib/auth.js';
+import { BASE_URL, photoprism } from '../../config.js';
+import { loginViaAPI } from '../../lib/auth.js';
 
 test.describe('API Login', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
@@ -13,8 +13,8 @@ test.describe('API Login', () => {
     await loginPage.clickPhotoprismLogoMenu();
     await expect(page.getByTitle('admin')).toBeVisible();
     const sessionToken = await page.evaluate(() => localStorage.getItem('session.token'));
-    expect(sessionToken).toBeTruthy();
+    expect(sessionToken).toMatch(/^[a-z0-9]+$/);
     const sessionId = await page.evaluate(() => localStorage.getItem('session.id'));
-    expect(sessionId).toBeTruthy();
+    expect(sessionId).toMatch(/^[a-z0-9]+$/);
   });
 });

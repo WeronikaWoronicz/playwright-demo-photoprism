@@ -1,5 +1,19 @@
-import { BrowserContext } from '@playwright/test';
+import { BrowserContext, Page } from '@playwright/test';
 import { BASE_URL } from '../config.js';
+
+export async function getSessionToken(page: Page): Promise<string> {
+  const state = await page.context().storageState();
+  const token = state.origins.flatMap((o) => o.localStorage ?? []).find((item) => item.name === 'session.token')?.value;
+  if (!token) throw new Error('Session token not found in localStorage');
+  return token;
+}
+
+export async function getSessionTokenFromContext(context: BrowserContext): Promise<string> {
+  const state = await context.storageState();
+  const token = state.origins.flatMap((o) => o.localStorage ?? []).find((item) => item.name === 'session.token')?.value;
+  if (!token) throw new Error('Session token not found in localStorage');
+  return token;
+}
 
 export async function loginViaAPI(
   username: string,

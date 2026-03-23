@@ -7,7 +7,6 @@ test.describe('Library Browse and Sort', () => {
     await libraryPage.navigateToBrowse();
     await expect(page).toHaveURL(/library\/browse/);
     await expect(page.getByRole('textbox', { name: 'Search' })).toBeVisible();
-    await expect(page.locator('main')).toBeVisible();
   });
 
   test('TC-LIB-002 User sees uploaded photos in library @P0', async ({ uploadPage, libraryPage }) => {
@@ -22,7 +21,7 @@ test.describe('Library Browse and Sort', () => {
     expect(count).toBeGreaterThanOrEqual(1);
     const uids = await libraryPage.getRenderedPhotoUids();
     expect(uids.length).toBeGreaterThanOrEqual(1);
-    expect(uids[0]).toBeTruthy();
+    expect(uids[0]).toMatch(/^[a-z0-9]+$/);
   });
 
   test('TC-LIB-003 User can sort photos by date @P2', async ({ uploadPage, libraryPage }) => {

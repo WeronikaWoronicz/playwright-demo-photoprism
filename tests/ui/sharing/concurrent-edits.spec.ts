@@ -5,6 +5,7 @@ import { LibraryPage } from '../../../pages/LibraryPage.js';
 import { BASE_URL } from '../../../config.js';
 import { createPath } from '../../../lib/assets.js';
 import { getAdminAuthPath } from '../../../lib/auth-paths.js';
+import { getSessionToken } from '../../../lib/auth.js';
 
 test.describe('Concurrent Edits', () => {
   test('TC-CONC-001 User sees last-write-wins when two users edit the same photo title concurrently @P2', async ({
@@ -18,7 +19,7 @@ test.describe('Concurrent Edits', () => {
     await uploadPage.waitForPhotoInLibrary();
 
     const uid = uploadPage.trackedUids[0];
-    expect(uid).toBeTruthy();
+    expect(uid).toMatch(/^[a-z0-9]+$/);
 
     const workerIdx = parseInt(process.env['TEST_PARALLEL_INDEX'] ?? '0', 10);
     const [context1, context2] = await Promise.all([
@@ -56,13 +57,9 @@ test.describe('Concurrent Edits', () => {
     await context1.close();
     await context2.close();
 
-    const state = await page.context().storageState();
-    const token = state.origins
-      .flatMap((o) => o.localStorage ?? [])
-      .find((item) => item.name.endsWith('session.token'))?.value;
-    expect(token, 'session token not found in storageState').toBeTruthy();
+    const token = await getSessionToken(page);
     const resp = await page.request.get(`${BASE_URL}/api/v1/photos/${uid}`, {
-      headers: { 'X-Auth-Token': token! },
+      headers: { 'X-Auth-Token': token },
     });
     const updatedPhoto = (await resp.json()) as { UID: string; Title: string };
     expect(updatedPhoto.Title).toBe('Title From User 2');

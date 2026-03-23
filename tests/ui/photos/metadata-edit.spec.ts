@@ -1,6 +1,6 @@
 import { test } from '../../../fixtures/pages.js';
 import { expect } from '@playwright/test';
-import { generatePhotoMetadata } from '../../../fixtures/testData/photoData.js';
+import { generatePhotoMetadata } from '../../../scripts/photoData.js';
 import { createPath } from '../../../lib/assets.js';
 
 test.describe('Photo Metadata Edit', () => {
@@ -16,10 +16,10 @@ test.describe('Photo Metadata Edit', () => {
     await uploadPage.waitForPhotoInLibrary(1, 'title-edit-target.jpg');
 
     const uid = uploadPage.trackedUids[0];
-    expect(uid).toBeTruthy();
+    expect(uid).toMatch(/^[a-z0-9]+$/);
 
     await photoDetailPage.openPhoto(uid);
-    await photoDetailPage.openEditPanel();
+    await photoDetailPage.openEditPanelFromCache();
 
     const metadata = generatePhotoMetadata(42);
     await photoDetailPage.editTitle(metadata.title);
@@ -28,7 +28,7 @@ test.describe('Photo Metadata Edit', () => {
     await page.reload();
     await libraryPage.waitForPhotos();
     await photoDetailPage.openPhoto(uid);
-    await photoDetailPage.openEditPanel();
+    await photoDetailPage.openEditPanelFromCache();
     await expect(page.getByRole('textbox', { name: 'Title' })).toHaveValue(metadata.title);
     await expect(page.getByRole('textbox', { name: 'Title' })).toHaveScreenshot('title-field-persisted.png');
   });

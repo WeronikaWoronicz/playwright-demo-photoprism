@@ -14,6 +14,6 @@ test.describe('WebDAV Access', () => {
       },
     });
 
-    expect(resp.status()).toBeLessThan(500);
+    expect([200, 207]).toContain(resp.status());
   });
 });

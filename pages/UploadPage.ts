@@ -1,31 +1,32 @@
-import { type Page } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BASE_URL } from '../config.js';
 import { uploadMessages } from '../lib/constants.js';
 import { copyFileSync, readFileSync, writeFileSync, unlinkSync, existsSync } from 'fs';
 import { join, dirname, basename, extname } from 'path';
 import { randomBytes } from 'crypto';
-
-const selectors = {
-  nav: {
-    searchInput: 'Search',
-  },
-  upload: {
-    browseButton: /browse/i,
-    completeText: uploadMessages.uploadCompleted,
-  },
-  photo: {
-    tile: '.is-photo',
-    renderedTile: '.is-photo[data-uid]',
-  },
-};
+import { getSessionToken } from '../lib/auth.js';
 
 export class UploadPage {
+  readonly page: Page;
+  readonly searchInput: Locator;
+  readonly browseButton: Locator;
+  readonly uploadCompleteText: Locator;
+  readonly photoTile: Locator;
+  readonly renderedPhotoTile: Locator;
+  readonly navUploadLink: Locator;
   private _trackedUids: string[] = [];
   private _uniqueTag: string;
   private _tempFiles: string[] = [];
   private _uploadProcessingPromise: Promise<unknown> | null = null;
 
-  constructor(readonly page: Page) {
+  constructor(page: Page) {
+    this.page = page;
+    this.searchInput = page.getByRole('textbox', { name: 'Search' });
+    this.browseButton = page.getByRole('button', { name: /browse/i });
+    this.uploadCompleteText = page.getByText(uploadMessages.uploadCompleted);
+    this.photoTile = page.locator('.is-photo');
+    this.renderedPhotoTile = page.locator('.is-photo[data-uid]');
+    this.navUploadLink = page.locator('a.nav-upload');
     this._uniqueTag = randomBytes(8).toString('hex');
   }
 
@@ -37,14 +38,13 @@ export class UploadPage {
     return (await this.fetchPhotoUidsByFilename(this._uniqueTag)).length;
   }
 
-  private async getSessionToken(): Promise<string | undefined> {
-    const state = await this.page.context().storageState();
-    return state.origins.flatMap((o) => o.localStorage ?? []).find((item) => item.name === 'session.token')?.value;
-  }
-
   private async fetchPhotoUidsByFilename(uniqueTag: string): Promise<string[]> {
-    const token = await this.getSessionToken();
-    if (!token) return [];
+    let token: string | undefined;
+    try {
+      token = await getSessionToken(this.page);
+    } catch {
+      return [];
+    }
     const [libResp, revResp] = await Promise.all([
       this.page.request.get(`${BASE_URL}/api/v1/photos`, {
         params: { count: 100, offset: 0 },
@@ -67,13 +67,9 @@ export class UploadPage {
   }
 
   private async openUploadMenu() {
-    await this.page.locator('a.nav-upload').waitFor({ state: 'attached', timeout: 15000 });
-    await this.page.evaluate(() => {
-      const link = document.querySelector('a.nav-upload') as HTMLElement | null;
-      if (!link) throw new Error('Upload link not found in navigation');
-      link.click();
-    });
-    await this.page.getByRole('button', { name: selectors.upload.browseButton }).waitFor({ timeout: 10000 });
+    await this.navUploadLink.waitFor({ state: 'attached', timeout: 10000 });
+    await this.page.evaluate(() => (document.querySelector('a.nav-upload') as HTMLElement).click());
+    await this.browseButton.waitFor({ timeout: 10000 });
   }
 
   async uploadFiles(filePaths: string | string[]) {
@@ -104,9 +100,12 @@ export class UploadPage {
       .waitForResponse((resp) => resp.url().includes('/upload/') && resp.request().method() === 'POST', {
         timeout: 60000,
       })
-      .catch(() => null);
+      .catch(() => {
+        console.debug('UploadPage: upload response not captured (may have completed before listener)');
+        return null;
+      });
     const fileChooserPromise = this.page.waitForEvent('filechooser');
-    await this.page.getByRole('button', { name: selectors.upload.browseButton }).click();
+    await this.browseButton.click();
     const fileChooser = await fileChooserPromise;
     await fileChooser.setFiles(uniquePaths);
   }
@@ -119,19 +118,10 @@ export class UploadPage {
   }
 
   async waitForUploadComplete() {
-    await this.page.getByText(selectors.upload.completeText).waitFor({ timeout: 30000 });
+    await this.uploadCompleteText.waitFor({ timeout: 30000 });
     if (this._uploadProcessingPromise) {
       await this._uploadProcessingPromise;
       this._uploadProcessingPromise = null;
-    }
-    const token = await this.getSessionToken();
-    if (token) {
-      this.page.request
-        .post(`${BASE_URL}/api/v1/index`, {
-          data: { action: 'index' },
-          headers: { 'X-Auth-Token': token },
-        })
-        .catch(() => {});
     }
   }
 
@@ -144,7 +134,12 @@ export class UploadPage {
       .poll(
         async () => {
           const byTag = await this.fetchPhotoUidsByFilename(this._uniqueTag);
-          const token = await this.getSessionToken();
+          let token: string | undefined;
+          try {
+            token = await getSessionToken(this.page);
+          } catch {
+            // Token not available
+          }
           if (token) {
             const reviewResp = await this.page.request.get(`${BASE_URL}/api/v1/photos`, {
               params: { count: 10000, offset: 0, review: true },
@@ -164,14 +159,36 @@ export class UploadPage {
         { timeout: 120000 }
       )
       .toBeGreaterThanOrEqual(effectiveMinCount);
-    const token = await this.getSessionToken();
+    let token: string | undefined;
+    try {
+      token = await getSessionToken(this.page);
+    } catch {
+      // Token not available
+    }
     if (token && ownReviewUids.length > 0) {
       await this.page.request.post(`${BASE_URL}/api/v1/batch/photos/approve`, {
         data: { photos: ownReviewUids },
         headers: { 'X-Auth-Token': token },
       });
+      // After approval, poll until photos appear in library (not review) to ensure indexing
+      await expect
+        .poll(
+          async () => {
+            const libResp = await this.page.request.get(`${BASE_URL}/api/v1/photos`, {
+              params: { count: 100, offset: 0 },
+              headers: { 'X-Auth-Token': token },
+            });
+            const libPhotos = libResp.ok()
+              ? ((await libResp.json()) as Array<{ UID: string; OriginalName?: string }>)
+              : [];
+            const found = libPhotos.filter((p) => p.OriginalName?.includes(this._uniqueTag));
+            return found.length;
+          },
+          { timeout: 60000 }
+        )
+        .toBeGreaterThanOrEqual(effectiveMinCount);
     }
-    const allNewUids = [...new Set([...ownReviewUids, ...ownLibraryUids])];
+    const allNewUids = [...new Set([...ownLibraryUids, ...ownReviewUids])];
     this._trackedUids = [...new Set([...this._trackedUids, ...allNewUids])];
     await this.page.goto(`${BASE_URL}/library/browse`);
     for (const uid of allNewUids) {
@@ -184,11 +201,12 @@ export class UploadPage {
 
   async navigateToLibrary() {
     await this.page.goto(`${BASE_URL}/library/browse`);
-    await this.page.getByRole('textbox', { name: selectors.nav.searchInput }).waitFor();
+    await this.searchInput.waitFor();
   }
 
   async getRenderedPhotoUids(): Promise<string[]> {
-    const tiles = this.page.locator(selectors.photo.renderedTile);
-    return tiles.evaluateAll((els: Element[]) => els.map((el) => el.getAttribute('data-uid') as string));
+    return this.renderedPhotoTile.evaluateAll((els: Element[]) =>
+      els.map((el) => el.getAttribute('data-uid') as string)
+    );
   }
 }

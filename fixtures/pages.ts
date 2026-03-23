@@ -7,7 +7,7 @@ import { SharePage } from '../pages/SharePage.js';
 import { AdminPage } from '../pages/AdminPage.js';
 import { AlbumPage } from '../pages/AlbumPage.js';
 import { checkA11y } from '../lib/accessibility.js';
-import { test as base } from '@playwright/test';
+import { test as base, type Page } from '@playwright/test';
 import { deletePhotosByUids, deleteAllAlbums, deleteAllPhotos } from '../lib/photoprism-api.js';
 import { createPath } from '../lib/assets.js';
 
@@ -23,6 +23,7 @@ export type Pages = {
   a11yCheck: (opts?: { disableRules?: string[] }) => Promise<void>;
   pageErrors: Error[];
   uploadedPhoto: { uid: string };
+  unauthPage: Page;
 };
 
 export const test = base.extend<Pages>({
@@ -57,6 +58,12 @@ export const test = base.extend<Pages>({
     await use(albumPageObj);
     await albumPageObj.deleteTrackedAlbums();
     await deleteAllAlbums(context);
+  },
+  unauthPage: async ({ browser }, use) => {
+    const ctx = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+    const pg = await ctx.newPage();
+    await use(pg);
+    await ctx.close();
   },
   a11yCheck: async ({ page }, use) => {
     await use((opts) => checkA11y(page, opts));

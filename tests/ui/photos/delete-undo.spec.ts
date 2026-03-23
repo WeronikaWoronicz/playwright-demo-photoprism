@@ -10,7 +10,7 @@ test.describe('Photo Delete', () => {
     await uploadPage.waitForPhotoInLibrary();
 
     const uid = uploadPage.trackedUids[0];
-    expect(uid).toBeTruthy();
+    expect(uid).toMatch(/^[a-z0-9]+$/);
 
     await libraryPage.navigateToBrowse();
     await libraryPage.waitForPhoto(uid);
@@ -19,5 +19,9 @@ test.describe('Photo Delete', () => {
 
     await libraryPage.navigateToBrowse();
     await libraryPage.waitForPhotoDisappearing(uid);
+
+    await libraryPage.navigateToArchive();
+    await libraryPage.waitForPhoto(uid);
+    await expect(libraryPage.getPhotoTile(uid)).toBeVisible();
   });
 });
