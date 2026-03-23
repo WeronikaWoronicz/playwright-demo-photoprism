@@ -1,17 +1,18 @@
-import { type Page } from '@playwright/test';
-
-const selectors = {
-  search: {
-    input: 'Search',
-    tile: '.is-photo',
-  },
-};
+import { Page, Locator } from '@playwright/test';
 
 export class SearchPage {
-  constructor(readonly page: Page) {}
+  readonly page: Page;
+  readonly searchInput: Locator;
+  readonly photoTile: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.searchInput = page.getByRole('textbox', { name: 'Search' });
+    this.photoTile = page.locator('.is-photo');
+  }
 
   async search(query: string) {
-    await this.page.getByRole('textbox', { name: selectors.search.input }).fill(query);
+    await this.searchInput.fill(query);
     await Promise.all([
       this.page.waitForResponse((r) => r.url().includes('/api/v1/photos') && r.status() === 200, { timeout: 10000 }),
       this.page.keyboard.press('Enter'),
@@ -21,6 +22,6 @@ export class SearchPage {
   }
 
   async getResultCount(): Promise<number> {
-    return this.page.locator(selectors.search.tile).count();
+    return this.photoTile.count();
   }
 }

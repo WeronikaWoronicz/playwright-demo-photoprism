@@ -1,4 +1,4 @@
-import { type Page } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BASE_URL } from '../config.js';
 import { uploadMessages } from '../lib/constants.js';
 import { copyFileSync, readFileSync, writeFileSync, unlinkSync, existsSync } from 'fs';
@@ -6,27 +6,27 @@ import { join, dirname, basename, extname } from 'path';
 import { randomBytes } from 'crypto';
 import { getSessionToken } from '../lib/auth.js';
 
-const selectors = {
-  nav: {
-    searchInput: 'Search',
-  },
-  upload: {
-    browseButton: /browse/i,
-    completeText: uploadMessages.uploadCompleted,
-  },
-  photo: {
-    tile: '.is-photo',
-    renderedTile: '.is-photo[data-uid]',
-  },
-};
-
 export class UploadPage {
+  readonly page: Page;
+  readonly searchInput: Locator;
+  readonly browseButton: Locator;
+  readonly uploadCompleteText: Locator;
+  readonly photoTile: Locator;
+  readonly renderedPhotoTile: Locator;
+  readonly navUploadLink: Locator;
   private _trackedUids: string[] = [];
   private _uniqueTag: string;
   private _tempFiles: string[] = [];
   private _uploadProcessingPromise: Promise<unknown> | null = null;
 
-  constructor(readonly page: Page) {
+  constructor(page: Page) {
+    this.page = page;
+    this.searchInput = page.getByRole('textbox', { name: 'Search' });
+    this.browseButton = page.getByRole('button', { name: /browse/i });
+    this.uploadCompleteText = page.getByText(uploadMessages.uploadCompleted);
+    this.photoTile = page.locator('.is-photo');
+    this.renderedPhotoTile = page.locator('.is-photo[data-uid]');
+    this.navUploadLink = page.locator('a.nav-upload');
     this._uniqueTag = randomBytes(8).toString('hex');
   }
 
@@ -67,9 +67,9 @@ export class UploadPage {
   }
 
   private async openUploadMenu() {
-    await this.page.locator('a.nav-upload').waitFor({ state: 'attached', timeout: 10000 });
+    await this.navUploadLink.waitFor({ state: 'attached', timeout: 10000 });
     await this.page.evaluate(() => (document.querySelector('a.nav-upload') as HTMLElement).click());
-    await this.page.getByRole('button', { name: selectors.upload.browseButton }).waitFor({ timeout: 10000 });
+    await this.browseButton.waitFor({ timeout: 10000 });
   }
 
   async uploadFiles(filePaths: string | string[]) {
@@ -105,7 +105,7 @@ export class UploadPage {
         return null;
       });
     const fileChooserPromise = this.page.waitForEvent('filechooser');
-    await this.page.getByRole('button', { name: selectors.upload.browseButton }).click();
+    await this.browseButton.click();
     const fileChooser = await fileChooserPromise;
     await fileChooser.setFiles(uniquePaths);
   }
@@ -118,7 +118,7 @@ export class UploadPage {
   }
 
   async waitForUploadComplete() {
-    await this.page.getByText(selectors.upload.completeText).waitFor({ timeout: 30000 });
+    await this.uploadCompleteText.waitFor({ timeout: 30000 });
     if (this._uploadProcessingPromise) {
       await this._uploadProcessingPromise;
       this._uploadProcessingPromise = null;
@@ -201,11 +201,12 @@ export class UploadPage {
 
   async navigateToLibrary() {
     await this.page.goto(`${BASE_URL}/library/browse`);
-    await this.page.getByRole('textbox', { name: selectors.nav.searchInput }).waitFor();
+    await this.searchInput.waitFor();
   }
 
   async getRenderedPhotoUids(): Promise<string[]> {
-    const tiles = this.page.locator(selectors.photo.renderedTile);
-    return tiles.evaluateAll((els: Element[]) => els.map((el) => el.getAttribute('data-uid') as string));
+    return this.renderedPhotoTile.evaluateAll((els: Element[]) =>
+      els.map((el) => el.getAttribute('data-uid') as string)
+    );
   }
 }

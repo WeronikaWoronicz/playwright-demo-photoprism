@@ -1,48 +1,41 @@
-import { type Page } from '@playwright/test';
-
-const selectors = {
-  input: {
-    userName: 'input[name="username"]',
-    password: 'input[type="password"]',
-  },
-  buttons: {
-    signIn: 'Sign in',
-  },
-  logo: {
-    photoprism: 'PhotoPrism',
-  },
-  user: {
-    adminTitle: 'admin',
-  },
-};
+import { Page, Locator } from '@playwright/test';
 
 export class LoginPage {
-  private page: Page;
+  readonly page: Page;
+  readonly userNameInput: Locator;
+  readonly passwordInput: Locator;
+  readonly signInButton: Locator;
+  readonly photoprismLogo: Locator;
+  readonly adminAvatar: Locator;
 
   constructor(page: Page) {
     this.page = page;
+    this.userNameInput = page.locator('input[name="username"]');
+    this.passwordInput = page.locator('input[type="password"]');
+    this.signInButton = page.getByRole('button', { name: 'Sign in' });
+    this.photoprismLogo = page.getByRole('link', { name: 'PhotoPrism' });
+    this.adminAvatar = page.getByTitle('admin');
   }
 
   async clickSignInBtn() {
-    await this.page.getByRole('button', { name: selectors.buttons.signIn }).click();
+    await this.signInButton.click();
   }
 
   async clickPhotoprismLogoMenu() {
-    await this.page.getByRole('link', { name: selectors.logo.photoprism }).click();
+    await this.photoprismLogo.click();
   }
 
   async clickAdminTitle() {
-    const adminAvatar = this.page.getByTitle(selectors.user.adminTitle);
-    await adminAvatar.scrollIntoViewIfNeeded();
-    await adminAvatar.click();
+    await this.adminAvatar.scrollIntoViewIfNeeded();
+    await this.adminAvatar.click();
   }
 
   async fillUserName(user: string) {
-    await this.page.locator(selectors.input.userName).fill(user);
+    await this.userNameInput.fill(user);
   }
 
   async fillPassword(password: string) {
-    await this.page.locator(selectors.input.password).fill(password);
+    await this.passwordInput.fill(password);
   }
 
   async login(username: string, password: string) {

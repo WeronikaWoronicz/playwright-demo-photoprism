@@ -1,9 +1,13 @@
-import { type Page, type APIRequestContext } from '@playwright/test';
+import { Page, APIRequestContext } from '@playwright/test';
 import { BASE_URL } from '../config.js';
 import { getSessionToken } from '../lib/auth.js';
 
 export class SharePage {
-  constructor(readonly page: Page) {}
+  readonly page: Page;
+
+  constructor(page: Page) {
+    this.page = page;
+  }
 
   async createShareLink(photoUid: string, request: APIRequestContext): Promise<string> {
     const token = await getSessionToken(this.page);

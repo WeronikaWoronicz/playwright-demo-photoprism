@@ -1,23 +1,24 @@
-import { type Page, type Locator } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BASE_URL } from '../config.js';
 
-const selectors = {
-  photo: {
-    tile: '.is-photo',
-    renderedTile: '.is-photo[data-uid]',
-    tileByUid: (uid: string) => `.is-photo[data-uid="${uid}"]`,
-  },
-  search: {
-    input: 'Search',
-  },
-};
-
 export class LibraryPage {
-  constructor(readonly page: Page) {}
+  readonly page: Page;
+  readonly photoTile: Locator;
+  readonly renderedPhotoTile: Locator;
+  readonly searchInput: Locator;
+  readonly clipboardMenu: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.photoTile = page.locator('.is-photo');
+    this.renderedPhotoTile = page.locator('.is-photo[data-uid]');
+    this.searchInput = page.getByRole('textbox', { name: 'Search' });
+    this.clipboardMenu = page.locator('.clipboard-container .action-menu');
+  }
 
   async navigateToBrowse() {
     await this.page.goto(BASE_URL + '/library/browse');
-    await this.page.getByRole('textbox', { name: selectors.search.input }).waitFor();
+    await this.searchInput.waitFor();
   }
 
   async navigateToArchive() {
@@ -26,13 +27,11 @@ export class LibraryPage {
   }
 
   async getPhotoCount(): Promise<number> {
-    return this.page.locator(selectors.photo.tile).count();
+    return this.photoTile.count();
   }
 
   async getRenderedPhotoUids(): Promise<string[]> {
-    return this.page
-      .locator(selectors.photo.renderedTile)
-      .evaluateAll((els) => els.map((el) => el.getAttribute('data-uid') as string));
+    return this.renderedPhotoTile.evaluateAll((els) => els.map((el) => el.getAttribute('data-uid') as string));
   }
 
   async setSortOrder(order: 'newest' | 'oldest') {
@@ -41,11 +40,11 @@ export class LibraryPage {
   }
 
   async waitForPhotos() {
-    await this.page.locator(selectors.photo.renderedTile).first().waitFor({ timeout: 15000 });
+    await this.renderedPhotoTile.first().waitFor({ timeout: 15000 });
   }
 
   getPhotoTile(uid: string): Locator {
-    return this.page.locator(selectors.photo.tileByUid(uid));
+    return this.page.locator(`.is-photo[data-uid="${uid}"]`);
   }
 
   async selectPhoto(uid: string): Promise<void> {
@@ -60,7 +59,7 @@ export class LibraryPage {
         btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       }
     }, uid);
-    await this.page.locator('.clipboard-container .action-menu').waitFor({ timeout: 15000 });
+    await this.clipboardMenu.waitFor({ timeout: 15000 });
   }
 
   async clickPhoto(uid: string) {
