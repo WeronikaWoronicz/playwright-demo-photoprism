@@ -15,6 +15,10 @@ permissions:
   pull-requests: write
   actions: write
 
+concurrency:
+  group: playwright-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   e2e:
     name: 🔬 E2E Tests
