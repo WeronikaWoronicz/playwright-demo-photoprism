@@ -40,3 +40,5 @@ export const photoprism = {
   username: get_from_env_or_throw('PHOTOPRISM_USERNAME'),
   password: get_from_env_or_throw('PHOTOPRISM_PASSWORD'),
 };
+
+const __CI_GATE_FAILURE__: string = 1;
