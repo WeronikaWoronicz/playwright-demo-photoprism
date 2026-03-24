@@ -7,6 +7,8 @@ on:
     branches: [main, master]
     types: [opened, synchronize, labeled, reopened]
   workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'
 
 permissions:
   contents: write
