@@ -1,5 +1,7 @@
 # Playwright demo photoprism
 
+[![Nightly Tests](https://github.com/WeronikaWoronicz/playwright-demo-photoprism/actions/workflows/playwright.yml/badge.svg?event=schedule)](https://github.com/WeronikaWoronicz/playwright-demo-photoprism/actions/workflows/playwright.yml)
+
 End-to-end test suite for [PhotoPrism](https://www.photoprism.app/) using Playwright.
 
 ## Technology Stack
