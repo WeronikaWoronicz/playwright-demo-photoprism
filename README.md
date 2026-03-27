@@ -1,4 +1,6 @@
-# Playwright demo photoprism
+![Playwright Demo Banner](.github/banner.png)
+
+&nbsp;
 
 [![Nightly Tests](https://github.com/WeronikaWoronicz/playwright-demo-photoprism/actions/workflows/playwright.yml/badge.svg?event=schedule)](https://github.com/WeronikaWoronicz/playwright-demo-photoprism/actions/workflows/playwright.yml)
 
